@@ -1,217 +1,167 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PSICO MANAGER - Gerenciamento</title>
+/ =======================================================
+// CONFIGURAÇÃO DO SISTEMA
+// =======================================================
+
+// Substitua pelo ID da sua planilha (ex: 1zYp...)
+const SPREADSHEET_ID = 'SEU_ID_DA_PLANILHA_AQUI'; 
+const CLIENTES_SHEET_NAME = 'Clientes';
+const SESSOES_SHEET_NAME = 'Sessões';
+
+// Substitua pelo ID do seu calendário (Ex: c_1a2b3c4d5e6f7g8h9i0jkl@group.calendar.google.com)
+// Você pode encontrar o ID nas configurações do seu Google Calendar.
+const CALENDAR_ID = 'SEU_ID_DO_GOOGLE_CALENDAR_AQUI'; 
+
+// =======================================================
+// FUNÇÃO PRINCIPAL
+// =======================================================
+
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  if (action === 'getAgenda') {
+    return handleGetAgenda(e);
+  }
+  if (action === 'listarPacientes') {
+    return handleListarPacientes(); // Mantém a listagem de clientes do Sheets
+  }
+  // Se for um request GET de clientes (Busca por CPF), redireciona para Sheets (seria ideal que o front usasse POST)
+  if (action === 'buscarPaciente') { 
+    return handleBuscarPaciente(e);
+  }
+  
+  // Se for a página inicial, serve o HTML (você deve publicar este script como Web App)
+  return HtmlService.createTemplateFromFile('index').evaluate();
+}
+
+function doPost(e) {
+  const action = e.parameter.action;
+
+  if (action === 'createEvent') {
+    return handleCreateEvent(e);
+  }
+  if (action === 'deleteEvent') {
+    return handleDeleteEvent(e);
+  }
+  if (action === 'cadastrarPaciente') {
+    return handleCadastrarPaciente(e); // Mantém o cadastro de clientes do Sheets
+  }
+  if (action === 'registrarSessao') {
+    return handleRegistrarSessao(e); // Mantém o registro de sessões do Sheets
+  }
+  
+  return jsonResponse({ erro: 'Ação POST não reconhecida.' });
+}
+
+// =======================================================
+// FUNÇÕES DE AGENDA (Google Calendar API)
+// =======================================================
+
+function handleGetAgenda(e) {
+  try {
+    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+    if (!calendar) {
+      return jsonResponse({ erro: 'Calendário não encontrado. Verifique o CALENDAR_ID.' });
+    }
+
+    const start = new Date(e.parameter.start);
+    const end = new Date(e.parameter.end);
+
+    // Busca todos os eventos na faixa de datas
+    const events = calendar.getEvents(start, end);
     
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
+    // Mapeia eventos para o formato que o FullCalendar entende
+    const formattedEvents = events.map(event => {
+      // Usa uma descrição simples para identificar o tipo de evento (Bloqueio vs Agendamento)
+      const eventTitle = event.getTitle() || '';
+      let type = 'AGENDAMENTO';
+      if (eventTitle.toUpperCase().includes('BLOQUEIO')) {
+          type = 'BLOQUEIO';
+      }
+      
+      return {
+        id: event.getId(),
+        title: eventTitle,
+        start: event.getStartTime().toISOString(),
+        end: event.getEndTime().toISOString(),
+        type: type,
+        // color: (type === 'BLOQUEIO' ? 'red' : 'blue') // Cor é definida no Front-End
+      };
+    });
+
+    return jsonResponse(formattedEvents);
+
+  } catch (error) {
+    Logger.log('Erro no handleGetAgenda: ' + error.toString());
+    return jsonResponse({ erro: 'Falha ao buscar agenda. ' + error.message });
+  }
+}
+
+function handleCreateEvent(e) {
+  try {
+    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+    const id = e.parameter.id;
+    const title = e.parameter.title;
+    const start = new Date(e.parameter.start);
+    const end = new Date(e.parameter.end);
+    const type = e.parameter.type;
     
-    <div id="mainContent" style="display: flex;">
-        
-        
-        <div class="sidebar">
-            <h2 class="logo">PSICO MANAGER</h2>
-            <nav>
-                <a id="navClientes" class="active nav-link" data-view="clientes">Clientes/Sessões</a>
-                <a id="navRelatorios" class="nav-link" data-view="relatorios">Relatórios Financeiros</a>
-            </nav>
-            <a id="navLogout" onclick="logout()" class="nav-link nav-logout">Sair (Logout)</a>
-        </div>
+    if (id) {
+      // Modificar Evento Existente
+      const event = calendar.getEventById(id);
+      if (!event) return jsonResponse({ erro: 'Evento não encontrado para modificação.' });
+      
+      event.setTitle(title);
+      event.setTime(start, end);
+      
+    } else {
+      // Criar Novo Evento
+      calendar.createEvent(title, start, end);
+    }
 
-        
-        <div class="main-area">
+    return jsonResponse({ sucesso: true });
 
-            
-            <div class="header">
-                <h1 id="mainTitle">Gerenciamento de Clientes e Sessões</h1>
-                <button id="btnVerPacientes" class="btn-secondary">Ver Todos os Clientes</button>
-            </div>
+  } catch (error) {
+    Logger.log('Erro no handleCreateEvent: ' + error.toString());
+    return jsonResponse({ erro: 'Falha ao salvar evento. ' + error.message });
+  }
+}
 
-            <div class="card-container">
-                
-                
-                <div id="viewClientes" class="view-content active-view">
-                    
-                    <div class="card search-card">
-                        <form id="buscaForm">
-                            <label for="buscaCpf">Buscar cliente pelo **CPF** (somente números):</label>
-                            <div class="input-group">
-                                <input type="text" id="buscaCpf" required placeholder="Digite o CPF">
-                                <button type="submit" class="btn-primary">Buscar Cliente</button>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <p id="statusMensagem" class="alert"></p>
+function handleDeleteEvent(e) {
+  try {
+    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
+    const id = e.parameter.id;
 
-                    
-                    <div id="blocoCadastro" style="display:none;" class="card">
-                        <div id="alertaCadastro" class="alert-info">
-                            O cliente com o CPF <span id="cpfNaoEncontrado"></span> não foi encontrado na **Página1**. Por favor, cadastre-o.
-                        </div>
+    const event = calendar.getEventById(id);
+    if (!event) {
+      return jsonResponse({ erro: 'Evento não encontrado para exclusão.' });
+    }
 
-                        <form id="cadastroForm">
-                            <h2>Cadastro Rápido de Novo Cliente</h2>
-                            <input type="hidden" name="action" value="cadastrarPaciente">
-                            
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="cNome">Nome Completo:</label>
-                                    <input type="text" name="nome" id="cNome" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="cCPF">CPF:</label>
-                                    <input type="text" name="cpf" id="cCPF" required readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label for="cIdade">Idade:</label>
-                                    <input type="number" name="idade" id="cIdade" min="1" max="120">
-                                </div>
-                                <div class="form-group">
-                                    <label for="cTratamento">Tratamento/Especialidade:</label>
-                                    <input type="text" name="tratamento" id="cTratamento" placeholder="Ex: TEA, Ansiedade">
-                                </div>
-                                <div class="form-group">
-                                    <label for="cPreco">Preço da Sessão (R$):</label>
-                                    <input type="number" name="preco" id="cPreco" step="0.01" min="0" value="0.00" required>
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn-primary">Finalizar Cadastro</button>
-                        </form>
-                    </div>
+    event.deleteEvent();
+
+    return jsonResponse({ sucesso: true });
+
+  } catch (error) {
+    Logger.log('Erro no handleDeleteEvent: ' + error.toString());
+    return jsonResponse({ erro: 'Falha ao excluir evento. ' + error.message });
+  }
+}
 
 
-                    
-                    <div id="dadosPaciente" style="display:none;" class="card">
-                        
-                        <h2>Informações do Cliente</h2>
-                        
-                        <div class="summary-grid">
-                            <div class="data-item">
-                                <b>Nome:</b> <span id="pNome"></span>
-                            </div>
-                            <div class="data-item">
-                                <b>CPF:</b> <span id="pCPF"></span>
-                            </div>
-                            <div class="data-item">
-                                <b>Idade:</b> <span id="pIdade"></span>
-                            </div>
-                            <div class="data-item">
-                                <b>Preço:</b> R$ <span id="pPreco"></span>
-                            </div>
-                            <div class="data-item">
-                                <b>Tratamento:</b> <span id="pTratamento"></span>
-                            </div>
-                        </div>
+// =======================================================
+// FUNÇÕES DE CLIENTES E SESSÕES (Google Sheets API)
+// =======================================================
 
-                        
-                        <div class="stats-grid">
-                            <div class="stat-box warning">
-                                <h4><span id="pSessoesMes">0</span></h4>
-                                <p>Sessões **Neste Mês**</p>
-                            </div>
-                            <div class="stat-box warning">
-                                <h4>R$ <span id="pTotalMes">0.00</span></h4>
-                                <p>**Valor a Pagar** (Este Mês)</p>
-                            </div>
-                            <div class="stat-box success">
-                                <h4><span id="pSessoesTotal">0</span></h4>
-                                <p>Sessões **Total**</p>
-                            </div>
-                            <div class="stat-box success">
-                                <h4>R$ <span id="pTotalGeral">0.00</span></h4>
-                                <p>Faturamento **Total**</p>
-                            </div>
-                        </div>
+// As funções de Sheets (handleBuscarPaciente, handleCadastrarPaciente, etc.) 
+// devem ser mantidas aqui, usando SpreadsheetApp.getSpreadsheetById(SPREADSHEET_ID).
 
-                        
-                        <h3>Registrar Nova Sessão</h3>
-                        <form id="novaSessao" class="form-inline">
-                            <input type="hidden" name="action" value="registrarSessao">
-                            <input type="hidden" name="cpf" id="nCPF">
-                            
-                            <div class="form-group">
-                                <label for="data_sessao">Data:</label>
-                                <input type="date" name="data_sessao" id="data_sessao" required>
-                            </div>
-                            
-                            <div class="form-group wide">
-                                <label for="anotacao">Anotação (Opcional):</label>
-                                <textarea name="anotacao" id="anotacao" rows="2" placeholder="Detalhes da consulta, evolução, etc."></textarea>
-                            </div>
+// ... (COLE AQUI O SEU CÓDIGO ANTERIOR DE MANUSEIO DE CLIENTES E SESSÕES, GARANTINDO QUE ELE USE SpreadsheetApp) ...
 
-                            <button type="submit" class="btn-primary">Salvar Sessão</button>
-                        </form>
-                        
-                        <h3>Histórico de Sessões Anteriores</h3>
-                        <div id="pHistorico" class="historico"></div>
-                    </div>
 
-                    
-                    <div id="listaPacientesContainer" style="display:none;" class="card">
-                        <h2>Lista de Clientes Cadastrados</h2>
-                        <ul id="listaPacientes" class="client-list"></ul>
-                    </div>
+// =======================================================
+// FUNÇÃO DE UTILIDADE
+// =======================================================
 
-                </div>
-                
-                
-                <div id="viewRelatorios" class="view-content" style="display:none;">
-                    <h2>Relatório Financeiro por Período</h2>
-                    
-                    <p id="statusMensagemRelatorio" class="alert"></p>
-                    
-                    <form id="filtroRelatorioForm" class="card form-inline">
-                        <div class="form-group">
-                            <label for="dataInicio">Início:</label>
-                            <input type="date" id="dataInicio" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="dataFim">Fim:</label>
-                            <input type="date" id="dataFim" required>
-                        </div>
-                        <button type="submit" class="btn-primary">Filtrar Relatório</button>
-                    </form>
-                    
-                    <div id="relatorioContent">
-                        <div class="stats-grid">
-                            <div class="stat-box primary">
-                                <h4><span id="rSessoesFiltradas">0</span></h4>
-                                <p>Sessões no Período</p>
-                            </div>
-                            <div class="stat-box success">
-                                <h4>R$ <span id="rTotalFiltrado">0.00</span></h4>
-                                <p>Faturamento no Período</p>
-                            </div>
-                        </div>
-                        
-                        <h3>Status de Pagamento por Cliente</h3>
-                        <div class="card">
-                            <table id="tabelaRelatorioMensal" class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cliente</th>
-                                        <th>Sessões</th>
-                                        <th>Valor (R$)</th>
-                                        <th>Status</th>
-                                        <th>Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div> 
-
-    
-    <script src="script.js"></script>
-</body>
-</html>
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
