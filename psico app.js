@@ -1,4 +1,4 @@
-// app.js
+ // app.js
 
 // ⚠️ URL do seu App Script:
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3NE4A49kGH62hpsoCi8D8ne5r_89t_dWgf2CSExGJ9ue6yyCOg2dXY3Bc1gjhG812/exec"; 
