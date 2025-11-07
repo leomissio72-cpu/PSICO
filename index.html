@@ -1,95 +1,217 @@
- // app.js
-
-//  ⚠️ URL do seu App Script:
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3NE4A49kGH62hpsoCi8D8ne5r_89t_dWgf2CSExGJ9ue6yyCOg2dXY3Bc1gjhG812/exec"; 
-
-// A partir daqui, o código assume que você também precisa de funções para a navegação básica
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializa a view padrão (você pode mudar esta função)
-    mostrarBemVindo(); 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSICO MANAGER - Gerenciamento</title>
     
-    // Configura os listeners de clique para o menu
-    document.querySelectorAll('#menu-principal a').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const view = this.getAttribute('data-view');
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="mainContent" style="display: flex;">
+        
+        
+        <div class="sidebar">
+            <h2 class="logo">PSICO MANAGER</h2>
+            <nav>
+                <a id="navClientes" class="active nav-link" data-view="clientes">Clientes/Sessões</a>
+                <a id="navRelatorios" class="nav-link" data-view="relatorios">Relatórios Financeiros</a>
+            </nav>
+            <a id="navLogout" onclick="logout()" class="nav-link nav-logout">Sair (Logout)</a>
+        </div>
+
+        
+        <div class="main-area">
+
             
-            // Aqui você define qual função chamar para cada view
-            if (view === 'pacientes') {
-                // Por enquanto, apenas abre o formulário de cadastro, mas deve listar!
-                abrirFormularioNovoPaciente(); 
-            }
-            // Adicione chamadas para as outras views (prontuarios, financeiro) aqui
-            // else if (view === 'prontuarios') mostrarProntuarios();
-        });
-    });
+            <div class="header">
+                <h1 id="mainTitle">Gerenciamento de Clientes e Sessões</h1>
+                <button id="btnVerPacientes" class="btn-secondary">Ver Todos os Clientes</button>
+            </div>
 
-    // Configura o listener para o botão rápido de novo paciente
-    const btnNovoPaciente = document.querySelector('button[onclick="abrirFormularioNovoPaciente()"]');
-    if(btnNovoPaciente) {
-        btnNovoPaciente.onclick = abrirFormularioNovoPaciente;
-    }
-});
+            <div class="card-container">
+                
+                
+                <div id="viewClientes" class="view-content active-view">
+                    
+                    <div class="card search-card">
+                        <form id="buscaForm">
+                            <label for="buscaCpf">Buscar cliente pelo **CPF** (somente números):</label>
+                            <div class="input-group">
+                                <input type="text" id="buscaCpf" required placeholder="Digite o CPF">
+                                <button type="submit" class="btn-primary">Buscar Cliente</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <p id="statusMensagem" class="alert"></p>
+
+                    
+                    <div id="blocoCadastro" style="display:none;" class="card">
+                        <div id="alertaCadastro" class="alert-info">
+                            O cliente com o CPF <span id="cpfNaoEncontrado"></span> não foi encontrado na **Página1**. Por favor, cadastre-o.
+                        </div>
+
+                        <form id="cadastroForm">
+                            <h2>Cadastro Rápido de Novo Cliente</h2>
+                            <input type="hidden" name="action" value="cadastrarPaciente">
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="cNome">Nome Completo:</label>
+                                    <input type="text" name="nome" id="cNome" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cCPF">CPF:</label>
+                                    <input type="text" name="cpf" id="cCPF" required readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cIdade">Idade:</label>
+                                    <input type="number" name="idade" id="cIdade" min="1" max="120">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cTratamento">Tratamento/Especialidade:</label>
+                                    <input type="text" name="tratamento" id="cTratamento" placeholder="Ex: TEA, Ansiedade">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cPreco">Preço da Sessão (R$):</label>
+                                    <input type="number" name="preco" id="cPreco" step="0.01" min="0" value="0.00" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-primary">Finalizar Cadastro</button>
+                        </form>
+                    </div>
 
 
-// 1. Função para abrir o formulário de cadastro de paciente
-function abrirFormularioNovoPaciente() {
-    const viewContainer = document.getElementById('view-dinamica');
-    viewContainer.innerHTML = `
-        <h2>Cadastro de Novo Paciente</h2>
-        <form id="form-cadastro-paciente">
-            <label>Nome:</label><input type="text" name="nome" required><br>
-            <label>CPF:</label><input type="text" name="cpf" required><br>
-            <label>Idade:</label><input type="number" name="idade"><br>
-            <label>Tratamento:</label><input type="text" name="tratamento"><br>
-            <button type="submit">Cadastrar no Google Sheets</button>
-        </form>
-    `;
+                    
+                    <div id="dadosPaciente" style="display:none;" class="card">
+                        
+                        <h2>Informações do Cliente</h2>
+                        
+                        <div class="summary-grid">
+                            <div class="data-item">
+                                <b>Nome:</b> <span id="pNome"></span>
+                            </div>
+                            <div class="data-item">
+                                <b>CPF:</b> <span id="pCPF"></span>
+                            </div>
+                            <div class="data-item">
+                                <b>Idade:</b> <span id="pIdade"></span>
+                            </div>
+                            <div class="data-item">
+                                <b>Preço:</b> R$ <span id="pPreco"></span>
+                            </div>
+                            <div class="data-item">
+                                <b>Tratamento:</b> <span id="pTratamento"></span>
+                            </div>
+                        </div>
 
-    // 2. Lógica para submissão do formulário e envio para o Google Sheets
-    document.getElementById('form-cadastro-paciente').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const dados = new FormData(event.target);
-        
-        const pacienteParaSheet = {
-            nome: dados.get('nome'),
-            cpf: dados.get('cpf'),
-            idade: dados.get('idade'),
-            tratamento: dados.get('tratamento')
-        };
-        
-        // Envia os dados para o Google Apps Script
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'cors', 
-            cache: 'no-cache',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(pacienteParaSheet) // Envia o objeto como JSON
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.resultado === "sucesso") {
-                alert('✅ Paciente cadastrado no Google Sheets com sucesso! ID: ' + data.novoID);
-                // O novo ID é útil para vincular sessões e financeiro!
-                // Limpa o formulário após o sucesso
-                document.getElementById('form-cadastro-paciente').reset(); 
-            } else {
-                alert('❌ Erro ao cadastrar: ' + (data.mensagem || 'Verifique o Apps Script.'));
-            }
-        })
-        .catch(error => {
-            console.error('Erro de rede/servidor:', error);
-            alert('❌ Erro de conexão. Verifique se o seu Apps Script está ativo.');
-        });
-    });
-}
+                        
+                        <div class="stats-grid">
+                            <div class="stat-box warning">
+                                <h4><span id="pSessoesMes">0</span></h4>
+                                <p>Sessões **Neste Mês**</p>
+                            </div>
+                            <div class="stat-box warning">
+                                <h4>R$ <span id="pTotalMes">0.00</span></h4>
+                                <p>**Valor a Pagar** (Este Mês)</p>
+                            </div>
+                            <div class="stat-box success">
+                                <h4><span id="pSessoesTotal">0</span></h4>
+                                <p>Sessões **Total**</p>
+                            </div>
+                            <div class="stat-box success">
+                                <h4>R$ <span id="pTotalGeral">0.00</span></h4>
+                                <p>Faturamento **Total**</p>
+                            </div>
+                        </div>
 
-function mostrarBemVindo() {
-     const viewContainer = document.getElementById('view-dinamica');
-     viewContainer.innerHTML = '<h2>Bem-vindo!</h2><p>Use os botões de ação ou o menu principal para gerenciar os dados dos pacientes.</p>';
-}
+                        
+                        <h3>Registrar Nova Sessão</h3>
+                        <form id="novaSessao" class="form-inline">
+                            <input type="hidden" name="action" value="registrarSessao">
+                            <input type="hidden" name="cpf" id="nCPF">
+                            
+                            <div class="form-group">
+                                <label for="data_sessao">Data:</label>
+                                <input type="date" name="data_sessao" id="data_sessao" required>
+                            </div>
+                            
+                            <div class="form-group wide">
+                                <label for="anotacao">Anotação (Opcional):</label>
+                                <textarea name="anotacao" id="anotacao" rows="2" placeholder="Detalhes da consulta, evolução, etc."></textarea>
+                            </div>
 
-// **Próxima Etapa Crítica:** Implementar a função para LER os dados da planilha!
-// Você precisará de uma nova função no Apps Script (doGet) para buscar os dados.
+                            <button type="submit" class="btn-primary">Salvar Sessão</button>
+                        </form>
+                        
+                        <h3>Histórico de Sessões Anteriores</h3>
+                        <div id="pHistorico" class="historico"></div>
+                    </div>
+
+                    
+                    <div id="listaPacientesContainer" style="display:none;" class="card">
+                        <h2>Lista de Clientes Cadastrados</h2>
+                        <ul id="listaPacientes" class="client-list"></ul>
+                    </div>
+
+                </div>
+                
+                
+                <div id="viewRelatorios" class="view-content" style="display:none;">
+                    <h2>Relatório Financeiro por Período</h2>
+                    
+                    <p id="statusMensagemRelatorio" class="alert"></p>
+                    
+                    <form id="filtroRelatorioForm" class="card form-inline">
+                        <div class="form-group">
+                            <label for="dataInicio">Início:</label>
+                            <input type="date" id="dataInicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dataFim">Fim:</label>
+                            <input type="date" id="dataFim" required>
+                        </div>
+                        <button type="submit" class="btn-primary">Filtrar Relatório</button>
+                    </form>
+                    
+                    <div id="relatorioContent">
+                        <div class="stats-grid">
+                            <div class="stat-box primary">
+                                <h4><span id="rSessoesFiltradas">0</span></h4>
+                                <p>Sessões no Período</p>
+                            </div>
+                            <div class="stat-box success">
+                                <h4>R$ <span id="rTotalFiltrado">0.00</span></h4>
+                                <p>Faturamento no Período</p>
+                            </div>
+                        </div>
+                        
+                        <h3>Status de Pagamento por Cliente</h3>
+                        <div class="card">
+                            <table id="tabelaRelatorioMensal" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Sessões</th>
+                                        <th>Valor (R$)</th>
+                                        <th>Status</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div> 
+
+    
+    <script src="script.js"></script>
+</body>
+</html>
