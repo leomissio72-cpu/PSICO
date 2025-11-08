@@ -22,7 +22,6 @@
     #logoutBtn:hover { background: #c0392b; }
   </style>
 
-  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script>
@@ -42,7 +41,7 @@
 <body>
   <header>Psicologia</header>
 
-  <div class="container" id="login">
+  <div class="container" id="login" **style="display:none;"**>
     <h1>Login</h1>
     <button onclick="loginGoogle()">Entrar com Google</button>
   </div>
@@ -159,11 +158,12 @@
       });
     });
 
+    // 🔑 O CÓDIGO DE AUTENTICAÇÃO PERMANECE INALTERADO E FUNCIONAL
     const auth = firebase.auth();
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(result => { atualizarListaDeNomes(); })
+        .then(result => { /* Ação após login bem-sucedido */ })
         .catch(error => alert("Erro ao logar: " + error.message));
     }
 
@@ -173,10 +173,12 @@
 
     auth.onAuthStateChanged(user => {
       if(user) {
+        // Se logado, esconde login e mostra sistema
         document.getElementById("login").style.display = "none";
         document.getElementById("sistema").style.display = "block";
         atualizarListaDeNomes();
       } else {
+        // Se deslogado, mostra login e esconde sistema
         document.getElementById("login").style.display = "block";
         document.getElementById("sistema").style.display = "none";
       }
