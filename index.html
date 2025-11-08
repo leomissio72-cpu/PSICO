@@ -4,7 +4,23 @@
   <meta charset="UTF-8" />
   <title>Prontuário Psicológico</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #e9eff4; margin: 0; padding: 0; }
+    /* AJUSTE AQUI: Oculta o corpo inteiro da página até que o JS decida o que mostrar */
+    body { font-family: Arial, sans-serif; background: #e9eff4; margin: 0; padding: 0; display: none; }
+    /* Estilo para a tela de carregamento */
+    #carregando {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #e9eff4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2em;
+        color: #3498db;
+        z-index: 9999;
+    }
     header { background: #3498db; color: white; text-align: center; padding: 15px 0; font-size: 1.8em; font-weight: bold; }
     .container { max-width: 900px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
     h1, h2 { text-align: center; color: #333; }
@@ -39,9 +55,11 @@
 </head>
 
 <body>
+  <div id="carregando">Verificando autenticação...</div>
+
   <header>Psicologia</header>
 
-  <div class="container" id="login" **style="display:none;"**>
+  <div class="container" id="login" style="display:none;">
     <h1>Login</h1>
     <button onclick="loginGoogle()">Entrar com Google</button>
   </div>
@@ -49,7 +67,7 @@
   <div class="container" id="sistema" style="display:none;">
     <button id="logoutBtn" onclick="logout()">Sair</button>
     <h1>Prontuário Psicológico</h1>
-
+    
     <div class="tabs">
       <button class="tab-button active" data-tab="paciente">Paciente</button>
       <button class="tab-button" data-tab="sessao">Sessão</button>
@@ -88,7 +106,7 @@
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyGaa6EF45xEvUpiKAp0oKHJgtaSJDY0q33ff1L-ZlQ_nHI5rg34ZVR7DyjKNj-iAPMrQ/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyGaa6EF45xEvUpiKAp0oKHJgtaSJDY0q33ff1L-ZlQ_nHI5rg5rg34ZVR7DyjKNj-iAPMrQ/exec";
 
     const formPaciente = document.getElementById("formPaciente");
     const formSessao = document.getElementById("formSessao");
@@ -158,12 +176,11 @@
       });
     });
 
-    // 🔑 O CÓDIGO DE AUTENTICAÇÃO PERMANECE INALTERADO E FUNCIONAL
     const auth = firebase.auth();
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(result => { /* Ação após login bem-sucedido */ })
+        .then(result => { /* A ação de exibir o sistema está no onAuthStateChanged */ })
         .catch(error => alert("Erro ao logar: " + error.message));
     }
 
@@ -172,6 +189,11 @@
     }
 
     auth.onAuthStateChanged(user => {
+      // 1. Remove a tela de carregamento
+      document.getElementById("carregando").style.display = "none";
+      // 2. Exibe o corpo principal (agora que a verificação está feita)
+      document.body.style.display = "block"; 
+
       if(user) {
         // Se logado, esconde login e mostra sistema
         document.getElementById("login").style.display = "none";
