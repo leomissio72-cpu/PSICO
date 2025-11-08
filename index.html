@@ -149,41 +149,51 @@
     const historicoSelect = document.getElementById("historicoSelect");
     const painel = document.getElementById("historicoConteudo");
 
-    function atualizarListaDeNomes() {
-      const pacientes = JSON.parse(localStorage.getItem("pacientes") || "[]");
-      const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
+    async function atualizarListaDeNomes() {
+      try {
+        const response = await fetch(scriptURL);
+        const pacientes = await response.json();
+        const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
 
-      nomeSelect.innerHTML = '<option value="">Selecione um paciente</option>';
-      historicoSelect.innerHTML = '<option value="">Selecione um paciente</option>';
-      nomesUnicos.forEach(nome => {
-        const option1 = document.createElement("option");
-        option1.value = nome;
-        option1.textContent = nome;
-        nomeSelect.appendChild(option1);
+        nomeSelect.innerHTML = '<option value="">Selecione um paciente</option>';
+        historicoSelect.innerHTML = '<option value="">Selecione um paciente</option>';
+        nomesUnicos.forEach(nome => {
+          const option1 = document.createElement("option");
+          option1.value = nome;
+          option1.textContent = nome;
+          nomeSelect.appendChild(option1);
 
-        const option2 = document.createElement("option");
-        option2.value = nome;
-        option2.textContent = nome;
-        historicoSelect.appendChild(option2);
-      });
+          const option2 = document.createElement("option");
+          option2.value = nome;
+          option2.textContent = nome;
+          historicoSelect.appendChild(option2);
+        });
+      } catch (error) {
+        console.error("Erro ao buscar pacientes:", error);
+      }
     }
 
-    function mostrarHistorico(nome) {
-      const pacientes = JSON.parse(localStorage.getItem("pacientes") || "[]");
-      const sessoes = pacientes.filter(p => p.nome.toLowerCase() === nome.toLowerCase());
+    async function mostrarHistorico(nome) {
+      try {
+        const response = await fetch(scriptURL);
+        const pacientes = await response.json();
+        const sessoes = pacientes.filter(p => p.nome.toLowerCase() === nome.toLowerCase());
 
-      if (sessoes.length === 0) {
-        painel.innerHTML = "<p>Nenhum histórico encontrado.</p>";
-        return;
+        if (sessoes.length === 0) {
+          painel.innerHTML = "<p>Nenhum histórico encontrado.</p>";
+          return;
+        }
+
+        painel.innerHTML = sessoes.map(sessao => `
+          <div class="session-card">
+            <strong>Data:</strong> ${sessao.dataConsulta}<br>
+            <strong>Histórico:</strong> ${sessao.historico}<br>
+            <strong>Evolução:</strong> ${sessao.evolucao}
+          </div>
+        `).join("");
+      } catch (error) {
+        console.error("Erro ao buscar histórico:", error);
       }
-
-      painel.innerHTML = sessoes.map(sessao => `
-        <div class="session-card">
-          <strong>Data:</strong> ${sessao.dataConsulta}<br>
-          <strong>Histórico:</strong> ${sessao.historico}<br>
-          <strong>Evolução:</strong> ${sessao.evolucao}
-        </div>
-      `).join("");
     }
 
     historicoSelect.addEventListener("change", () => {
@@ -196,25 +206,12 @@
       e.preventDefault();
       const formData = new FormData(form);
 
-      const paciente = {
-        nome: formData.get("nome"),
-        idade: formData.get("idade"),
-        contato: formData.get("contato"),
-        dataConsulta: formData.get("dataConsulta"),
-        historico: formData.get("historico"),
-        evolucao: formData.get("evolucao")
-      };
-
-      const pacientes = JSON.parse(localStorage.getItem("pacientes") || "[]");
-      pacientes.push(paciente);
-      localStorage.setItem("pacientes", JSON.stringify(pacientes));
-
       fetch(scriptURL, { method: "POST", body: formData })
         .then(() => {
           alert("✅ Paciente cadastrado com sucesso!");
           form.reset();
           atualizarListaDeNomes();
-          mostrarHistorico(paciente.nome);
+          mostrarHistorico(formData.get("nome"));
         })
         .catch(() => {
           alert("❌ Erro ao enviar. Verifique o script.");
