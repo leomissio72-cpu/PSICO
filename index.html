@@ -4,12 +4,13 @@
   <meta charset="UTF-8" />
   <title>Prontuário Psicológico</title>
   <style>
+    /* Estilos e CSS aqui... */
     body { font-family: Arial, sans-serif; background: #e9eff4; margin: 0; padding: 0; }
     #main-content { display: none; }
     #carregando {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: #e9eff4; display: flex; justify-content: center; align-items: center;
-      font-size: 1.5em; color: #3498db; z-index: 9999; font-weight: bold;
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: #e9eff4; display: flex; justify-content: center; align-items: center;
+        font-size: 1.5em; color: #3498db; z-index: 9999; font-weight: bold;
     }
     header { background: #3498db; color: white; text-align: center; padding: 15px 0; font-size: 1.8em; font-weight: bold; }
     .container { max-width: 900px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
@@ -46,7 +47,7 @@
     <div class="container" id="sistema" style="display:none;">
       <button id="logoutBtn" onclick="logout()">Sair</button>
       <h1>Prontuário Psicológico</h1>
-
+      
       <div class="tabs">
         <button class="tab-button active" data-tab="paciente">Paciente</button>
         <button class="tab-button" data-tab="sessao">Sessão</button>
@@ -55,19 +56,26 @@
 
       <div id="paciente" class="tab-content active">
         <form id="formPaciente">
-          <label>Nome:</label><input type="text" name="nome" required />
-          <label>Idade:</label><input type="number" name="idade" required />
-          <label>Contato:</label><input type="text" name="contato" />
+          <label>Nome:</label>
+          <input type="text" name="nome" required />
+          <label>Idade:</label>
+          <input type="number" name="idade" required />
+          <label>Contato:</label>
+          <input type="text" name="contato" />
           <button type="submit">Cadastrar Paciente</button>
         </form>
       </div>
 
       <div id="sessao" class="tab-content">
         <form id="formSessao">
-          <label>Paciente:</label><select name="nome" id="nomeSessao" required></select>
-          <label>Data da Consulta:</label><input type="date" name="dataConsulta" required />
-          <label>Histórico Psicológico:</label><textarea name="historico" rows="4"></textarea>
-          <label>Evolução do Tratamento:</label><textarea name="evolucao" rows="4"></textarea>
+          <label>Paciente:</label>
+          <select name="nome" id="nomeSessao" required></select>
+          <label>Data da Consulta:</label>
+          <input type="date" name="dataConsulta" required />
+          <label>Histórico Psicológico:</label>
+          <textarea name="historico" rows="4"></textarea>
+          <label>Evolução do Tratamento:</label>
+          <textarea name="evolucao" rows="4"></textarea>
           <button type="submit">Salvar Sessão</button>
         </form>
       </div>
@@ -81,6 +89,9 @@
   </div>
 
   <script>
+    // ==========================================================
+    // 1. CONFIGURAÇÃO E VARIÁVEIS INICIAIS
+    // ==========================================================
     const firebaseConfig = {
       apiKey: "AIzaSyCznEr8M2lNu7nwCfGN_kcJZFM5lqRQdf8",
       authDomain: "psico-17375.firebaseapp.com",
@@ -92,6 +103,7 @@
     };
     firebase.initializeApp(firebaseConfig);
 
+    // *VERIFIQUE ESTA URL!* Use a URL de implantação do seu Apps Script
     const scriptURL = "https://script.google.com/macros/s/AKfycbyVhouxq_lMiC4m8DMFIJe8SrUgNGWkWx4mAnL9oBijLXStmyfADJ7m8_PIblKrw0dX/exec";
 
     const formPaciente = document.getElementById("formPaciente");
@@ -99,24 +111,31 @@
     const nomeSessao = document.getElementById("nomeSessao");
     const historicoSelect = document.getElementById("historicoSelect");
     const painel = document.getElementById("historicoConteudo");
+    
+    // ==========================================================
+    // 2. FUNÇÕES DE BUSCA (GET)
+    // ==========================================================
 
     async function obterPacientes() {
       try {
         const response = await fetch(scriptURL);
-        if (!response.ok) throw new Error(`Erro: ${response.status}`);
+        if (!response.ok) throw new Error(`Falha de rede/servidor: ${response.status} ${response.statusText}`);
         const dados = await response.json();
-        return dados.filter(p => p.tipo === "paciente");
+        return dados.filter(p => p.tipo === "paciente"); 
       } catch (error) {
-        alert("Erro ao carregar pacientes: " + error.message);
-        return [];
+          console.error("Erro ao obter dados do Apps Script:", error);
+          alert("Erro ao carregar dados: " + error.message);
+          return [];
       }
     }
 
     async function atualizarListaDeNomes() {
       const pacientes = await obterPacientes();
       const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
+      
       nomeSessao.innerHTML = '<option value="">Selecione</option>';
       historicoSelect.innerHTML = '<option value="">Selecione</option>';
+      
       nomesUnicos.forEach(nome => {
         nomeSessao.innerHTML += `<option value="${nome}">${nome}</option>`;
         historicoSelect.innerHTML += `<option value="${nome}">${nome}</option>`;
@@ -124,106 +143,142 @@
     }
 
     async function mostrarHistorico(nome) {
-      if (!nome) return painel.innerHTML = "<p>Selecione um paciente.</p>";
-      const url = `${scriptURL}?action=buscarClienteCompleto&nome=${encodeURIComponent(nome)}`;
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        const historico = data.historico || [];
-        if (historico.length === 0) return painel.innerHTML = "<p>Nenhum histórico encontrado.</p>";
-        painel.innerHTML = historico.map(sessao => `
-          <div class="session-card">
-            <strong>Data:</strong            <strong>Data:</strong> ${sessao.data_sessao || "N/A"}<br>
-            <strong>Histórico:</strong> ${sessao.anotacao || "(não preenchido)"}<br>
-            <strong>Evolução:</strong> ${sessao.evolucao || "(não preenchido)"}
-          </div>
-        `).join("");
-      } catch (error) {
-        console.error("Erro ao carregar histórico:", error);
-        painel.innerHTML = `<p>Erro ao carregar histórico: ${error.message}</p>`;
-      }
+        if (!nome) {
+            painel.innerHTML = "<p>Selecione um paciente.</p>";
+            return;
+        }
+
+        const historicoURL = `${scriptURL}?action=buscarClienteCompleto&nome=${encodeURIComponent(nome)}`;
+        
+        try {
+            const response = await fetch(historicoURL);
+            if (!response.ok) throw new Error(`Erro de rede/servidor: ${response.status} ${response.statusText}`);
+            const data = await response.json();
+
+            if (data.erro) {
+                painel.innerHTML = `<p>Erro do Apps Script: ${data.erro}</p>`;
+                return;
+            }
+
+            const historico = data.historico || [];
+
+            if(historico.length === 0) {
+                painel.innerHTML = `<p>Nenhum histórico encontrado para ${nome}.</p>`;
+                return;
+            }
+            
+            painel.innerHTML = historico.map(sessao => {
+                return `<div class="session-card">
+                  <strong>Data:</strong> ${sessao.data_sessao || "N/A"}<br>
+                  <strong>Histórico:</strong> ${sessao.anotacao || "(não preenchido)"}<br>
+                  <strong>Evolução:</strong> ${sessao.evolucao || "(não preenchido)"}
+                </div>`;
+            }).join("");
+
+        } catch (error) {
+            console.error("Erro ao carregar histórico:", error);
+            painel.innerHTML = `<p>Erro ao carregar histórico: ${error.message}</p>`;
+        }
     }
+    
+    // ==========================================================
+    // 3. LISTENERS DE EVENTOS (FORMULÁRIOS E ABAS)
+    // ==========================================================
+    
+    historicoSelect.addEventListener("change", () => {
+      mostrarHistorico(historicoSelect.value);
+    });
 
-    // Submissão do formulário de Paciente
+    // Submissão do formulário de Paciente 
     formPaciente.addEventListener("submit", e => {
-      e.preventDefault();
-      const formData = new FormData(formPaciente);
-      formData.append("action", "cadastrarPaciente");
+      e.preventDefault();
+      const formData = new FormData(formPaciente);
+      formData.append("action", "cadastrarPaciente");
 
-      fetch(scriptURL, { method: "POST", body: formData })
-        .then(() => {
-          alert("Paciente cadastrado com sucesso!");
-          formPaciente.reset();
-          atualizarListaDeNomes();
-        })
-        .catch(error => {
-          alert("Erro ao cadastrar paciente: " + error.message);
-        });
+      fetch(scriptURL, { method: "POST", body: formData })
+        .then(response => {
+          if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
+          return response.json(); 
+        })
+        .then(data => {
+          if (data.sucesso) {
+            alert("Paciente cadastrado com sucesso!");
+            formPaciente.reset();
+            atualizarListaDeNomes();
+          } else {
+            throw new Error(data.mensagem || data.erro || "Erro desconhecido retornado pelo Apps Script.");
+          }
+        })
+        .catch(error => {
+          console.error("Erro no cadastro:", error);
+          alert("Erro ao cadastrar paciente: " + error.message);
+        });
     });
 
-    // Submissão do formulário de Sessão
+    // Submissão do formulário de Sessão 
     formSessao.addEventListener("submit", e => {
-      e.preventDefault();
-      const formData = new FormData(formSessao);
-      formData.append("action", "registrarSessao");
+      e.preventDefault();
+      const nomePaciente = formSessao.elements.nome.value;
+      const formData = new FormData(formSessao);
+      formData.append("action", "registrarSessao");
 
-      fetch(scriptURL, { method: "POST", body: formData })
-        .then(() => {
-          alert("Sessão registrada com sucesso!");
-          formSessao.reset();
-          mostrarHistorico(formData.get("nome"));
-        })
-        .catch(error => {
-          alert("Erro ao registrar sessão: " + error.message);
-        });
+      fetch(scriptURL, { method: "POST", body: formData })
+        .then(response => {
+          if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
+          return response.json(); 
+        })
+        .then(data => {
+          if (data.sucesso) {
+            alert("Sessão registrada com sucesso!");
+            formSessao.reset();
+            if (document.getElementById('historico').classList.contains('active') && historicoSelect.value === nomePaciente) {
+              mostrarHistorico(nomePaciente); 
+            }
+          } else {
+            throw new Error(data.mensagem || data.erro || "Erro desconhecido retornado pelo Apps Script.");
+          }
+        })
+        .catch(error => {
+          console.error("Erro no registro de sessão:", error);
+          alert("Erro ao registrar sessão: " + error.message);
+        });
     });
 
-    // Troca de abas
+    // Lógica das abas
     document.querySelectorAll(".tab-button").forEach(button => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
         button.classList.add("active");
-        document.getElementById(button.dataset.tab).classList.add("active");
+        const tabId = button.dataset.tab;
+        document.getElementById(tabId).classList.add("active");
+        
+        if (tabId === 'historico' && historicoSelect.value) {
+            mostrarHistorico(historicoSelect.value);
+        }
       });
     });
 
-    // Firebase Login com Google
+    // ==========================================================
+    // 4. AUTENTICAÇÃO FIREBASE 
+    // ==========================================================
     const auth = firebase.auth();
-
+    
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(result => {
-          console.log("Logado como:", result.user.email);
-          document.getElementById("login").style.display = "none";
-          document.getElementById("sistema").style.display = "block";
-          document.getElementById("carregando").style.display = "none";
-          document.getElementById("main-content").style.display = "block";
-          atualizarListaDeNomes();
-        })
-        .catch(error => {
-          alert("Erro ao logar: " + error.message);
-          console.error(error);
-        });
+        .catch(error => alert("Erro ao logar: " + error.message));
     }
 
     function logout() {
-      auth.signOut()
-        .then(() => {
-          document.getElementById("login").style.display = "block";
-          document.getElementById("sistema").style.display = "none";
-          document.getElementById("main-content").style.display = "block";
-        })
-        .catch(error => console.error("Erro ao sair:", error));
+      auth.signOut();
     }
 
-    // Verifica se o usuário está logado
     auth.onAuthStateChanged(user => {
       document.getElementById("carregando").style.display = "none";
-      document.getElementById("main-content").style.display = "block";
+      document.getElementById("main-content").style.display = "block"; 
 
-      if (user) {
+      if(user) {
         document.getElementById("login").style.display = "none";
         document.getElementById("sistema").style.display = "block";
         atualizarListaDeNomes();
