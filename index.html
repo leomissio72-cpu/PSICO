@@ -2,191 +2,190 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Psicologia - Sistema</title>
+  <title>Prontuário Psicológico</title>
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f8f9fa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-
-    .container {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0056b3;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #historico {
-      text-align: left;
-    }
-
-    .topo {
-      background: #007bff;
-      color: white;
-      padding: 10px;
-      text-align: center;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
+    body { font-family: Arial, sans-serif; background: #f0f0f0; margin:0; padding:20px; }
+    .container { max-width: 900px; margin: 20px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; }
+    label { display:block; margin-top:15px; font-weight:bold; }
+    input, select, textarea, button { width:100%; padding:10px; margin-top:5px; border-radius:5px; border:1px solid #ccc; box-sizing:border-box; }
+    button { background:#3498db; color:white; border:none; cursor:pointer; margin-top:15px; }
+    button:hover { background:#2980b9; }
+    .tabs { display:flex; justify-content:center; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+    .tab-button { padding:10px 20px; border:none; border-radius:5px; background:#bbb; color:white; cursor:pointer; }
+    .tab-button.active { background:#3498db; font-weight:bold; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .session-card { background:#f9f9f9; padding:15px; margin-top:15px; border-left:5px solid #3498db; border-radius:5px; }
+    #logoutBtn { position:absolute; top:20px; right:20px; padding:8px 14px; background:#e74c3c; color:white; border:none; border-radius:5px; cursor:pointer; }
+    #logoutBtn:hover { background:#c0392b; }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
 <body>
-  <!-- LOGIN -->
-  <div class="container" id="loginPage">
-    <h2>Psicologia</h2>
-    <p>Entre com sua conta Google</p>
-    <button id="googleLogin">Entrar com Google</button>
+  <!-- Tela de Login -->
+  <div class="container" id="login">
+    <h1>Login</h1>
+    <button onclick="loginGoogle()">Entrar com Google</button>
   </div>
 
-  <!-- FORMULÁRIO -->
-  <div class="container hidden" id="formPage">
-    <div class="topo">Psicologia</div>
-    <h2>Cadastro de Sessão</h2>
-    <form id="form">
-      <input type="text" name="nomePaciente" placeholder="Nome do Paciente" required>
-      <input type="date" name="dataConsulta" required>
-      <textarea name="historico" placeholder="Histórico" rows="3" required></textarea>
-      <textarea name="evolucao" placeholder="Evolução" rows="3" required></textarea>
-      <button type="submit">Salvar Sessão</button>
-      <button type="button" id="verHistorico">Ver Histórico</button>
-      <button type="button" id="sair">Sair</button>
-    </form>
-  </div>
+  <!-- Sistema -->
+  <div class="container" id="sistema" style="display:none; position:relative;">
+    <button id="logoutBtn" onclick="logout()">Sair</button>
+    <h1>Prontuário Psicológico</h1>
 
-  <!-- HISTÓRICO -->
-  <div class="container hidden" id="historicoPage">
-    <div class="topo">Psicologia</div>
-    <h2>Histórico de Sessões</h2>
-    <div id="historico"></div>
-    <button id="voltar">Voltar</button>
+    <div class="tabs">
+      <button class="tab-button active" data-tab="paciente">Paciente</button>
+      <button class="tab-button" data-tab="sessao">Sessão</button>
+      <button class="tab-button" data-tab="historico">Histórico</button>
+    </div>
+
+    <div id="paciente" class="tab-content active">
+      <form id="formPaciente">
+        <label>Nome:</label>
+        <input type="text" name="nome" required />
+        <label>Idade:</label>
+        <input type="number" name="idade" required />
+        <button type="submit">Cadastrar Paciente</button>
+      </form>
+    </div>
+
+    <div id="sessao" class="tab-content">
+      <form id="formSessao">
+        <label>Paciente:</label>
+        <select name="nome" id="nomeSessao" required></select>
+        <label>Data da Consulta:</label>
+        <input type="date" name="dataConsulta" required />
+        <label>Histórico Psicológico:</label>
+        <textarea name="historico" rows="4"></textarea>
+        <label>Evolução do Tratamento:</label>
+        <textarea name="evolucao" rows="4"></textarea>
+        <button type="submit">Salvar Sessão</button>
+      </form>
+    </div>
+
+    <div id="historico" class="tab-content">
+      <h2>Histórico do Paciente</h2>
+      <select id="historicoSelect"></select>
+      <div id="historicoConteudo"></div>
+    </div>
   </div>
 
   <script>
-    // 🔹 Configuração Firebase
+    // Firebase Config - Substitua pela sua do projeto
     const firebaseConfig = {
-      apiKey: "AIzaSyCqXUb8Fq44x3utPPOYp8VBGh9q8k4-1xE",
+      apiKey: "COLE_SUA_API_KEY_AQUI",
       authDomain: "psico-17375.firebaseapp.com",
       projectId: "psico-17375",
       storageBucket: "psico-17375.appspot.com",
-      messagingSenderId: "1007635106888",
-      appId: "1:1007635106888:web:19a05353e41f9b0f5c8f0c"
+      messagingSenderId: "405718265829",
+      appId: "1:405718265829:web:3e3974a0dc02080824890c",
     };
     firebase.initializeApp(firebaseConfig);
 
     const auth = firebase.auth();
-    const provider = new firebase.auth.GoogleAuthProvider();
-
-    const loginPage = document.getElementById("loginPage");
-    const formPage = document.getElementById("formPage");
-    const historicoPage = document.getElementById("historicoPage");
-    const form = document.getElementById("form");
-    const historicoDiv = document.getElementById("historico");
-
     const scriptURL = "https://script.google.com/macros/s/AKfycbyGaa6EF45xEvUpiKAp0oKHJgtaSJDY0q33ff1L-ZlQ_nHI5rg34ZVR7DyjKNj-iAPMrQ/exec";
 
-    // 🔹 Login Google
-    document.getElementById("googleLogin").addEventListener("click", () => {
-      auth.signInWithPopup(provider)
-        .then(result => {
-          loginPage.classList.add("hidden");
-          formPage.classList.remove("hidden");
-        })
-        .catch(err => alert("Erro no login: " + err.message));
+    const formPaciente = document.getElementById("formPaciente");
+    const formSessao = document.getElementById("formSessao");
+    const nomeSessao = document.getElementById("nomeSessao");
+    const historicoSelect = document.getElementById("historicoSelect");
+    const painel = document.getElementById("historicoConteudo");
+
+    // Atualiza lista de pacientes
+    async function atualizarListaDeNomes() {
+      const response = await fetch(scriptURL);
+      const pacientes = await response.json();
+      const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
+      nomeSessao.innerHTML = '<option value="">Selecione</option>';
+      historicoSelect.innerHTML = '<option value="">Selecione</option>';
+      nomesUnicos.forEach(nome => {
+        nomeSessao.innerHTML += `<option value="${nome}">${nome}</option>`;
+        historicoSelect.innerHTML += `<option value="${nome}">${nome}</option>`;
+      });
+    }
+
+    // Mostra histórico do paciente
+    async function mostrarHistorico(nome) {
+      const response = await fetch(scriptURL);
+      const pacientes = await response.json();
+      const sessoes = pacientes.filter(p => p.nome.toLowerCase() === nome.toLowerCase());
+      if(sessoes.length===0){
+        painel.innerHTML="<p>Nenhum histórico encontrado.</p>";
+        return;
+      }
+      painel.innerHTML = sessoes.map(sessao=>{
+        const data = new Date(sessao.dataConsulta).toLocaleString("pt-BR");
+        return `<div class="session-card">
+          <strong>Data:</strong> ${data}<br>
+          <strong>Histórico:</strong> ${sessao.historico || "(não preenchido)"}<br>
+          <strong>Evolução:</strong> ${sessao.evolucao || "(não preenchido)"}
+        </div>`;
+      }).join("");
+    }
+
+    historicoSelect.addEventListener("change", ()=>{ const nome=historicoSelect.value; if(nome) mostrarHistorico(nome); });
+
+    formPaciente.addEventListener("submit", e=>{
+      e.preventDefault();
+      const formData = new FormData(formPaciente);
+      formData.append("tipo","paciente");
+      fetch(scriptURL,{method:"POST",body:formData})
+        .then(()=>{ alert("Paciente cadastrado!"); formPaciente.reset(); atualizarListaDeNomes(); })
+        .catch(()=>alert("Erro ao cadastrar paciente."));
     });
 
-    // 🔹 Logout
-    document.getElementById("sair").addEventListener("click", () => {
-      auth.signOut().then(() => {
-        formPage.classList.add("hidden");
-        loginPage.classList.remove("hidden");
+    formSessao.addEventListener("submit", e=>{
+      e.preventDefault();
+      const formData = new FormData(formSessao);
+      formData.append("tipo","sessao");
+      fetch(scriptURL,{method:"POST",body:formData})
+        .then(()=>{ alert("Sessão registrada!"); formSessao.reset(); mostrarHistorico(formData.get("nome")); })
+        .catch(()=>alert("Erro ao registrar sessão."));
+    });
+
+    // Tabs
+    document.querySelectorAll(".tab-button").forEach(button=>{
+      button.addEventListener("click", ()=>{
+        document.querySelectorAll(".tab-button").forEach(btn=>btn.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(tab=>tab.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
       });
     });
 
-    // 🔹 Enviar dados à planilha
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const data = new FormData(form);
-      data.append("usuario", auth.currentUser ? auth.currentUser.email : "Anônimo");
-      data.append("dataEnvio", new Date().toLocaleString("pt-BR"));
-
-      fetch(scriptURL, { method: "POST", body: data })
-        .then(() => {
-          alert("✅ Sessão salva com sucesso!");
-          form.reset();
+    // Login Google
+    function loginGoogle(){
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(result=>{
+          document.getElementById("login").style.display="none";
+          document.getElementById("sistema").style.display="block";
+          atualizarListaDeNomes();
         })
-        .catch(() => alert("❌ Erro ao enviar os dados."));
-    });
-
-    // 🔹 Ver histórico
-    document.getElementById("verHistorico").addEventListener("click", () => {
-      formPage.classList.add("hidden");
-      historicoPage.classList.remove("hidden");
-      carregarHistorico();
-    });
-
-    // 🔹 Voltar do histórico
-    document.getElementById("voltar").addEventListener("click", () => {
-      historicoPage.classList.add("hidden");
-      formPage.classList.remove("hidden");
-    });
-
-    // 🔹 Buscar dados no Apps Script
-    function carregarHistorico() {
-      fetch(scriptURL + "?action=read")
-        .then(res => res.json())
-        .then(dados => {
-          if (!dados || dados.length === 0) {
-            historicoDiv.innerHTML = "<p>Nenhum registro encontrado.</p>";
-            return;
-          }
-          historicoDiv.innerHTML = dados.map(linha => `
-            <p><b>${linha.nomePaciente}</b><br>
-            Data: ${linha.dataConsulta}<br>
-            Histórico: ${linha.historico}<br>
-            Evolução: ${linha.evolucao}</p><hr>
-          `).join("");
-        })
-        .catch(() => historicoDiv.innerHTML = "<p>Erro ao carregar histórico.</p>");
+        .catch(err=>alert("Erro ao logar: "+err.message));
     }
+
+    function logout(){
+      auth.signOut().then(()=>{
+        document.getElementById("login").style.display="block";
+        document.getElementById("sistema").style.display="none";
+      });
+    }
+
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        document.getElementById("login").style.display="none";
+        document.getElementById("sistema").style.display="block";
+        atualizarListaDeNomes();
+      }else{
+        document.getElementById("login").style.display="block";
+        document.getElementById("sistema").style.display="none";
+      }
+    });
   </script>
 </body>
 </html>
