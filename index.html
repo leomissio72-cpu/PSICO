@@ -2,290 +2,47 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Prontuário Psicológico</title>
+  <title>Cadastro de Paciente</title>
   <style>
-    /* ... Estilos CSS ... */
-    body { font-family: Arial, sans-serif; background: #e9eff4; margin: 0; padding: 0; }
-    #main-content { display: none; }
-    #carregando {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: #e9eff4; display: flex; justify-content: center; align-items: center;
-        font-size: 1.5em; color: #3498db; z-index: 9999; font-weight: bold;
-    }
-    header { background: #3498db; color: white; text-align: center; padding: 15px 0; font-size: 1.8em; font-weight: bold; }
-    .container { max-width: 900px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
-    h1, h2 { text-align: center; color: #333; }
-    label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
-    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
-    button { margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s; }
+    body { font-family: Arial, sans-serif; background: #f0f4f8; padding: 40px; }
+    .container { max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; }
     button:hover { background: #2176bd; }
-    .tabs { display: flex; justify-content: center; margin-bottom: 25px; flex-wrap: wrap; gap: 10px; }
-    .tab-button { padding: 12px 25px; border: none; border-radius: 6px; background: #bbb; color: white; cursor: pointer; transition: background 0.3s; }
-    .tab-button.active { background: #3498db; font-weight: bold; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .session-card { background: #f9f9f9; padding: 15px; margin-top: 15px; border-left: 5px solid #3498db; border-radius: 6px; }
-    #logoutBtn { position: absolute; top: 15px; right: 15px; background: #e74c3c; border: none; color: white; padding: 8px 14px; border-radius: 5px; cursor: pointer; }
-    #logoutBtn:hover { background: #c0392b; }
   </style>
-
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 </head>
-
 <body>
-  <div id="carregando">Verificando autenticação...</div>
-
-  <div id="main-content">
-    <header>Psicologia</header>
-
-    <div class="container" id="login" style="display:none;">
-      <h1>Login</h1>
-      <button onclick="loginGoogle()">Entrar com Google</button>
-    </div>
-
-    <div class="container" id="sistema" style="display:none;">
-      <button id="logoutBtn" onclick="logout()">Sair</button>
-      <h1>Prontuário Psicológico</h1>
-      
-      <div class="tabs">
-        <button class="tab-button active" data-tab="paciente">Paciente</button>
-        <button class="tab-button" data-tab="sessao">Sessão</button>
-        <button class="tab-button" data-tab="historico">Histórico</button>
-      </div>
-
-      <div id="paciente" class="tab-content active">
-        <form id="formPaciente">
-          <label>Nome:</label>
-          <input type="text" name="nome" required />
-          <label>Idade:</label>
-          <input type="number" name="idade" required />
-          <label>Contato:</label>
-          <input type="text" name="contato" />
-          <button type="submit">Cadastrar Paciente</button>
-        </form>
-      </div>
-
-      <div id="sessao" class="tab-content">
-        <form id="formSessao">
-          <label>Paciente:</label>
-          <select name="nome" id="nomeSessao" required></select>
-          <label>Data da Consulta:</label>
-          <input type="date" name="dataConsulta" required />
-          <label>Histórico Psicológico:</label>
-          <textarea name="historico" rows="4"></textarea>
-          <label>Evolução do Tratamento:</label>
-          <textarea name="evolucao" rows="4"></textarea>
-          <button type="submit">Salvar Sessão</button>
-        </form>
-      </div>
-
-      <div id="historico" class="tab-content">
-        <h2>Histórico do Paciente</h2>
-        <select id="historicoSelect"></select>
-        <div id="historicoConteudo"></div>
-      </div>
-    </div>
+  <div class="container">
+    <h2>Cadastro de Paciente</h2>
+    <form id="formPaciente">
+      <label>Nome:</label>
+      <input type="text" name="nome" required />
+      <label>Idade:</label>
+      <input type="number" name="idade" required />
+      <label>Contato:</label>
+      <input type="text" name="contato" />
+      <button type="submit">Cadastrar</button>
+    </form>
   </div>
 
   <script>
-    // ==========================================================
-    // 1. CONFIGURAÇÃO E VARIÁVEIS INICIAIS
-    // ==========================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyCznEr8M2lNu7nwCfGN_kcJZFM5lqRQdf8",
-      authDomain: "psico-17375.firebaseapp.com",
-      projectId: "psico-17375",
-      storageBucket: "psico-17375.appspot.com",
-      messagingSenderId: "405718265829",
-      appId: "1:405718265829:web:3e3974a0dc02080824890c",
-      measurementId: "G-P19R4LJJKS"
-    };
-    firebase.initializeApp(firebaseConfig);
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzRmChRlh7Ai06_l8zly5-Zrj_rA4GJaXfJXLeElZ9BuHqfoiZFUDmhyqZOeVkho5f3/exec"; // substitua pelo seu link
 
-    // ** COPIE E COLE A NOVA URL GERADA APÓS A RE-IMPLANTAÇÃO DO APPS SCRIPT AQUI **
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxqQCLxMQfhtodBBEw8X_-7y_0em8rrbfRaxUj3KlWRhXxCv2slwoBuGqYZZfx9BL8d/exec"; // Mantenha esta URL temporariamente se não tiver a nova
+    document.getElementById("formPaciente").addEventListener("submit", e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      formData.append("action", "cadastrarPaciente");
 
-    const formPaciente = document.getElementById("formPaciente");
-    const formSessao = document.getElementById("formSessao");
-    const nomeSessao = document.getElementById("nomeSessao");
-    const historicoSelect = document.getElementById("historicoSelect");
-    const painel = document.getElementById("historicoConteudo");
-    
-    // ==========================================================
-    // 2. FUNÇÕES DE BUSCA (GET)
-    // ==========================================================
-
-    async function obterPacientes() {
-      try {
-        const response = await fetch(scriptURL);
-        if (!response.ok) throw new Error(`Falha de rede/servidor: ${response.status} ${response.statusText}`);
-        const dados = await response.json();
-        return dados.filter(p => p.tipo === "paciente"); 
-      } catch (error) {
-          console.error("Erro ao obter dados do Apps Script:", error);
-          alert("Erro ao carregar dados: Failed to fetch (Verifique a URL e as permissões do Apps Script).");
-          return [];
-      }
-    }
-
-    async function atualizarListaDeNomes() {
-      const pacientes = await obterPacientes();
-      const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
-      
-      nomeSessao.innerHTML = '<option value="">Selecione</option>';
-      historicoSelect.innerHTML = '<option value="">Selecione</option>';
-      
-      nomesUnicos.forEach(nome => {
-        nomeSessao.innerHTML += `<option value="${nome}">${nome}</option>`;
-        historicoSelect.innerHTML += `<option value="${nome}">${nome}</option>`;
-      });
-    }
-
-    async function mostrarHistorico(nome) {
-        if (!nome) {
-            painel.innerHTML = "<p>Selecione um paciente.</p>";
-            return;
-        }
-
-        const historicoURL = `${scriptURL}?action=buscarClienteCompleto&nome=${encodeURIComponent(nome)}`;
-        
-        try {
-            const response = await fetch(historicoURL);
-            if (!response.ok) throw new Error(`Erro de rede/servidor: ${response.status} ${response.statusText}`);
-            const data = await response.json();
-
-            if (data.erro) {
-                painel.innerHTML = `<p>Erro do Apps Script: ${data.erro}</p>`;
-                return;
-            }
-
-            const historico = data.historico || [];
-
-            if(historico.length === 0) {
-                painel.innerHTML = `<p>Nenhum histórico encontrado para ${nome}.</p>`;
-                return;
-            }
-            
-            painel.innerHTML = historico.map(sessao => {
-                return `<div class="session-card">
-                  <strong>Data:</strong> ${sessao.data_sessao || "N/A"}<br>
-                  <strong>Histórico:</strong> ${sessao.anotacao || "(não preenchido)"}<br>
-                  <strong>Evolução:</strong> ${sessao.evolucao || "(não preenchido)"}
-                </div>`;
-            }).join("");
-
-        } catch (error) {
-            console.error("Erro ao carregar histórico:", error);
-            painel.innerHTML = `<p>Erro ao carregar histórico: ${error.message}</p>`;
-        }
-    }
-    
-    // ==========================================================
-    // 3. LISTENERS DE EVENTOS (FORMULÁRIOS E ABAS)
-    // ==========================================================
-    
-    historicoSelect.addEventListener("change", () => {
-      mostrarHistorico(historicoSelect.value);
-    });
-
-    // Submissão do formulário de Paciente 
-    formPaciente.addEventListener("submit", e => {
-      e.preventDefault();
-      const formData = new FormData(formPaciente);
-      formData.append("action", "cadastrarPaciente");
-
-      fetch(scriptURL, { method: "POST", body: formData })
-        .then(response => {
-          if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
-          return response.json(); 
-        })
-        .then(data => {
-          if (data.sucesso) {
-            alert("Paciente cadastrado com sucesso!");
-            formPaciente.reset();
-            atualizarListaDeNomes();
-          } else {
-            throw new Error(data.mensagem || data.erro || "Erro desconhecido retornado pelo Apps Script.");
-          }
-        })
-        .catch(error => {
-          console.error("Erro no cadastro:", error);
-          alert("Erro ao cadastrar paciente: " + error.message);
-        });
-    });
-
-    // Submissão do formulário de Sessão 
-    formSessao.addEventListener("submit", e => {
-      e.preventDefault();
-      const nomePaciente = formSessao.elements.nome.value;
-      const formData = new FormData(formSessao);
-      formData.append("action", "registrarSessao");
-
-      fetch(scriptURL, { method: "POST", body: formData })
-        .then(response => {
-          if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
-          return response.json(); 
-        })
-        .then(data => {
-          if (data.sucesso) {
-            alert("Sessão registrada com sucesso!");
-            formSessao.reset();
-            if (document.getElementById('historico').classList.contains('active') && historicoSelect.value === nomePaciente) {
-              mostrarHistorico(nomePaciente); 
-            }
-          } else {
-            throw new Error(data.mensagem || data.erro || "Erro desconhecido retornado pelo Apps Script.");
-          }
-        })
-        .catch(error => {
-          console.error("Erro no registro de sessão:", error);
-          alert("Erro ao registrar sessão: " + error.message);
-        });
-    });
-
-    // Lógica das abas
-    document.querySelectorAll(".tab-button").forEach(button => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-        button.classList.add("active");
-        const tabId = button.dataset.tab;
-        document.getElementById(tabId).classList.add("active");
-        
-        if (tabId === 'historico' && historicoSelect.value) {
-            mostrarHistorico(historicoSelect.value);
-        }
-      });
-    });
-
-    // ==========================================================
-    // 4. AUTENTICAÇÃO FIREBASE 
-    // ==========================================================
-    const auth = firebase.auth();
-    
-    function loginGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .catch(error => alert("Erro ao logar: " + error.message));
-    }
-
-    function logout() {
-      auth.signOut();
-    }
-
-    auth.onAuthStateChanged(user => {
-      document.getElementById("carregando").style.display = "none";
-      document.getElementById("main-content").style.display = "block"; 
-
-      if(user) {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("sistema").style.display = "block";
-        atualizarListaDeNomes();
-      } else {
-        document.getElementById("login").style.display = "block";
-        document.getElementById("sistema").style.display = "none";
-      }
+      fetch(scriptURL, { method: "POST", body: formData })
+        .then(() => {
+          alert("Paciente cadastrado com sucesso!");
+          e.target.reset();
+        })
+        .catch(error => {
+          alert("Erro ao cadastrar: " + error.message);
+        });
     });
   </script>
 </body>
