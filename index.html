@@ -103,8 +103,8 @@
     };
     firebase.initializeApp(firebaseConfig);
 
-    // *VERIFIQUE ESTA URL!* Use a URL de implantação do seu Apps Script
-    const scriptURL = "https://script.google.com/macros/s/AKfycbw42QSz0_r8LmNcq7wYQZ0_qSveW878qId6xxwrMl2rknpSP-7aks_mui-TcFQ_CTye/exec";
+    // ** ATUALIZE ESTA URL!** Coloque a URL da sua implantação Apps Script (Permissão: "Qualquer pessoa")
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyVhouxq_lMiC4m8DMFIJe8SrUgNGWkWx4mAnL9oBijLXStmyfADJ7m8_PIblKrw0dX/exec";
 
     const formPaciente = document.getElementById("formPaciente");
     const formSessao = document.getElementById("formSessao");
@@ -124,7 +124,7 @@
         return dados.filter(p => p.tipo === "paciente"); 
       } catch (error) {
           console.error("Erro ao obter dados do Apps Script:", error);
-          alert("Erro ao carregar dados: " + error.message);
+          alert("Erro ao carregar dados: Failed to fetch (Verifique a URL e as permissões do Apps Script).");
           return [];
       }
     }
@@ -182,7 +182,7 @@
     }
     
     // ==========================================================
-    // 3. LISTENERS DE EVENTOS (FORMULÁRIOS E ABAS)
+    // 3. LISTENERS DE EVENTOS (FORMULÁRIOS E ABAS) - CORRIGIDOS
     // ==========================================================
     
     historicoSelect.addEventListener("change", () => {
@@ -198,7 +198,7 @@
       fetch(scriptURL, { method: "POST", body: formData })
         .then(response => {
           if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
-          return response.json(); 
+          return response.json(); // Lendo JSON
         })
         .then(data => {
           if (data.sucesso) {
@@ -225,7 +225,7 @@
       fetch(scriptURL, { method: "POST", body: formData })
         .then(response => {
           if (!response.ok) throw new Error("Erro de rede ao enviar formulário.");
-          return response.json(); 
+          return response.json(); // Lendo JSON
         })
         .then(data => {
           if (data.sucesso) {
