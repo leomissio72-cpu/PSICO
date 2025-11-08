@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <title>Prontuário Psicológico</title>
   <style>
-    /* AJUSTE AQUI: Oculta o corpo inteiro da página até que o JS decida o que mostrar */
+    /* AJUSTE: Oculta o corpo inteiro para evitar o "flash" do conteúdo */
     body { font-family: Arial, sans-serif; background: #e9eff4; margin: 0; padding: 0; display: none; }
-    /* Estilo para a tela de carregamento */
+    
+    /* Novo estilo para a tela de carregamento (Mostra enquanto verifica o login) */
     #carregando {
         position: fixed;
         top: 0;
@@ -17,9 +18,10 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 2em;
+        font-size: 1.5em;
         color: #3498db;
         z-index: 9999;
+        font-weight: bold;
     }
     header { background: #3498db; color: white; text-align: center; padding: 15px 0; font-size: 1.8em; font-weight: bold; }
     .container { max-width: 900px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
@@ -67,7 +69,7 @@
   <div class="container" id="sistema" style="display:none;">
     <button id="logoutBtn" onclick="logout()">Sair</button>
     <h1>Prontuário Psicológico</h1>
-    
+
     <div class="tabs">
       <button class="tab-button active" data-tab="paciente">Paciente</button>
       <button class="tab-button" data-tab="sessao">Sessão</button>
@@ -106,6 +108,7 @@
   </div>
 
   <script>
+    // Se esta URL não estiver funcionando para POST/GET, o problema é na configuração do Google Apps Script (permissões).
     const scriptURL = "https://script.google.com/macros/s/AKfycbyGaa6EF45xEvUpiKAp0oKHJgtaSJDY0q33ff1L-ZlQ_nHI5rg5rg34ZVR7DyjKNj-iAPMrQ/exec";
 
     const formPaciente = document.getElementById("formPaciente");
@@ -113,29 +116,49 @@
     const nomeSessao = document.getElementById("nomeSessao");
     const historicoSelect = document.getElementById("historicoSelect");
     const painel = document.getElementById("historicoConteudo");
-
+    
+    // ==========================================================
+    // FUNÇÕES DE BUSCA E EXIBIÇÃO DE DADOS
+    // ==========================================================
     async function atualizarListaDeNomes() {
+      // Requisita dados (GET)
       const response = await fetch(scriptURL);
       const pacientes = await response.json();
+      
       const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
+      
+      // Limpa e preenche o select de Sessão
       nomeSessao.innerHTML = '<option value="">Selecione</option>';
-      historicoSelect.innerHTML = '<option value="">Selecione</option>';
       nomesUnicos.forEach(nome => {
         nomeSessao.innerHTML += `<option value="${nome}">${nome}</option>`;
+      });
+      
+      // Limpa e preenche o select de Histórico
+      historicoSelect.innerHTML = '<option value="">Selecione</option>';
+      nomesUnicos.forEach(nome => {
         historicoSelect.innerHTML += `<option value="${nome}">${nome}</option>`;
       });
     }
 
     async function mostrarHistorico(nome) {
+      if (!nome) {
+        painel.innerHTML = "<p>Selecione um paciente.</p>";
+        return;
+      }
+      // Requisita dados (GET)
       const response = await fetch(scriptURL);
       const pacientes = await response.json();
+      
       const sessoes = pacientes.filter(p => p.nome.toLowerCase() === nome.toLowerCase());
+      
       if(sessoes.length === 0) {
         painel.innerHTML = "<p>Nenhum histórico encontrado.</p>";
         return;
       }
+      
+      // Mapeia e exibe as sessões
       painel.innerHTML = sessoes.map(sessao => {
-        const data = new Date(sessao.dataConsulta).toLocaleString("pt-BR");
+        const data = new Date(sessao.dataConsulta).toLocaleDateString("pt-BR"); // Usando toLocaleDateString
         return `<div class="session-card">
           <strong>Data:</strong> ${data}<br>
           <strong>Histórico:</strong> ${sessao.historico || "(não preenchido)"}<br>
@@ -143,44 +166,73 @@
         </div>`;
       }).join("");
     }
-
+    
+    // ==========================================================
+    // LISTENERS DE EVENTOS (FORMULÁRIOS E ABAS)
+    // ==========================================================
+    
+    // Listener para o select de histórico
     historicoSelect.addEventListener("change", () => {
       const nome = historicoSelect.value;
-      if(nome) mostrarHistorico(nome);
+      mostrarHistorico(nome);
     });
 
+    // Submissão do formulário de Paciente (POST)
     formPaciente.addEventListener("submit", e => {
       e.preventDefault();
       const formData = new FormData(formPaciente);
       formData.append("tipo", "paciente");
       fetch(scriptURL, { method: "POST", body: formData })
-        .then(() => { alert("Paciente cadastrado!"); formPaciente.reset(); atualizarListaDeNomes(); })
-        .catch(() => alert("Erro ao cadastrar paciente."));
+        .then(() => { 
+          alert("Paciente cadastrado!"); 
+          formPaciente.reset(); 
+          atualizarListaDeNomes(); 
+        })
+        .catch(() => alert("Erro ao cadastrar paciente. Verifique as permissões do Apps Script."));
     });
 
+    // Submissão do formulário de Sessão (POST)
     formSessao.addEventListener("submit", e => {
       e.preventDefault();
       const formData = new FormData(formSessao);
       formData.append("tipo", "sessao");
+      const nomePaciente = formData.get("nome"); // Salva o nome antes do fetch
+
       fetch(scriptURL, { method: "POST", body: formData })
-        .then(() => { alert("Sessão registrada!"); formSessao.reset(); mostrarHistorico(formData.get("nome")); })
-        .catch(() => alert("Erro ao registrar sessão."));
+        .then(() => { 
+          alert("Sessão registrada!"); 
+          formSessao.reset(); 
+          // Atualiza o histórico para o paciente que acabou de ser editado
+          if (historicoSelect.value === nomePaciente) {
+              mostrarHistorico(nomePaciente); 
+          }
+        })
+        .catch(() => alert("Erro ao registrar sessão. Verifique as permissões do Apps Script."));
     });
 
+    // Navegação entre abas
     document.querySelectorAll(".tab-button").forEach(button => {
       button.addEventListener("click", () => {
         document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
         button.classList.add("active");
         document.getElementById(button.dataset.tab).classList.add("active");
+        
+        // Se a aba for Histórico, mostra o histórico do paciente selecionado, se houver
+        if (button.dataset.tab === 'historico' && historicoSelect.value) {
+            mostrarHistorico(historicoSelect.value);
+        }
       });
     });
 
+    // ==========================================================
+    // AUTENTICAÇÃO FIREBASE
+    // ==========================================================
     const auth = firebase.auth();
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
-        .then(result => { /* A ação de exibir o sistema está no onAuthStateChanged */ })
+        .then(result => { /* Sucesso: onAuthStateChanged cuidará da tela */ })
         .catch(error => alert("Erro ao logar: " + error.message));
     }
 
@@ -189,18 +241,18 @@
     }
 
     auth.onAuthStateChanged(user => {
-      // 1. Remove a tela de carregamento
+      // 1. Remove a tela de carregamento (essencial para evitar o flash)
       document.getElementById("carregando").style.display = "none";
-      // 2. Exibe o corpo principal (agora que a verificação está feita)
+      // 2. Exibe o corpo principal da página
       document.body.style.display = "block"; 
 
       if(user) {
-        // Se logado, esconde login e mostra sistema
+        // Usuário logado: Mostra o sistema de prontuário
         document.getElementById("login").style.display = "none";
         document.getElementById("sistema").style.display = "block";
         atualizarListaDeNomes();
       } else {
-        // Se deslogado, mostra login e esconde sistema
+        // Usuário deslogado: Mostra a tela de login
         document.getElementById("login").style.display = "block";
         document.getElementById("sistema").style.display = "none";
       }
