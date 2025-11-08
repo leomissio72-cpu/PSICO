@@ -1,394 +1,192 @@
-// =======================================================
-// CONFIGURAÇÃO DO SISTEMA
-// =======================================================
-
-// --- CONFIGURAÇÕES DA PLANILHA (SHEETS) ---
-// 1. ID DA SUA PLANILHA (ENCONTRADO NA URL)
-const SPREADSHEET_ID = '15gNT-2Jtk5pMpznL6O-xZKKM24G4V1B-cqlfFfNlYXt'; 
-const CLIENTES_SHEET_NAME = 'Página1'; // Usando o nome da aba que você definiu
-const SESSOES_SHEET_NAME = 'Página2'; // Usando o nome da aba que você definiu
-
-// --- CONFIGURAÇÕES DO CALENDÁRIO (CALENDAR) ---
-// 2. ID DO SEU CALENDÁRIO GOOGLE
-const CALENDAR_ID = 'SEU_ID_DO_GOOGLE_CALENDAR_AQUI'; // <<<< SUBSTITUA ESTA LINHA!
-
-// =======================================================
-// FUNÇÕES PRINCIPAIS DE SERVIÇO (doGet, doPost)
-// =======================================================
-
-function doGet(e) {
-  const action = e.parameter.action;
-  
-  // Ações de Calendário
-  if (action === 'getAgenda') {
-    return handleGetAgenda(e);
-  }
-  
-  // Ações de Planilha (Leitura)
-  if (action === 'listarPacientes') {
-    return listarPacientes(); 
-  }
-  if (action === 'buscarClienteCompleto') { // Renomeado para buscar o paciente completo
-    return buscarClienteCompleto(e.parameter.cpf); 
-  }
-  if (action === 'gerarRelatorioFinanceiro') {
-    return gerarRelatorioFinanceiro(e.parameter.dataInicio, e.parameter.dataFim);
-  }
-  
-  // Retorna um erro se a ação for desconhecida
-  return jsonResponse({ erro: 'Ação GET não reconhecida ou URL inválida.' });
-}
-
-function doPost(e) {
-  const action = e.parameter.action;
-  const params = e.parameter;
-
-  // Ações de Calendário (Escrita/Atualização)
-  if (action === 'createEvent') {
-    return handleCreateEvent(e);
-  }
-  if (action === 'deleteEvent') {
-    return handleDeleteEvent(e);
-  }
-  
-  // Ações de Planilha (Escrita/Atualização)
-  if (action === 'cadastrarPaciente') {
-    return cadastrarPaciente(params); 
-  }
-  if (action === 'registrarSessao') {
-    return registrarSessao(params); 
-  }
-  if (action === 'marcarPagamento') {
-    return marcarPagamento(params.cpf, params.dataInicio, params.dataFim);
-  }
-  
-  return jsonResponse({ erro: 'Ação POST não reconhecida.' });
-}
-
-// =======================================================
-// FUNÇÕES DE UTILIDADE
-// =======================================================
-
-function getSheet(sheetName) {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  return ss.getSheetByName(sheetName);
-}
-
-function jsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-
-// =======================================================
-// FUNÇÕES DE AGENDA (Google Calendar API)
-// =======================================================
-
-function handleGetAgenda(e) {
-  try {
-    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
-    if (!calendar) {
-      return jsonResponse({ erro: 'Calendário não encontrado. Verifique o CALENDAR_ID.' });
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Psicologia - Sistema</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
 
-    const start = new Date(e.parameter.start);
-    const end = new Date(e.parameter.end);
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
 
-    const events = calendar.getEvents(start, end);
-    
-    const formattedEvents = events.map(event => {
-      const eventTitle = event.getTitle() || '';
-      let type = 'AGENDAMENTO';
-      if (eventTitle.toUpperCase().includes('BLOQUEIO')) {
-          type = 'BLOQUEIO';
-      }
-      
-      return {
-        id: event.getId(),
-        title: eventTitle,
-        start: event.getStartTime().toISOString(),
-        end: event.getEndTime().toISOString(),
-        type: type,
-      };
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #historico {
+      text-align: left;
+    }
+
+    .topo {
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div class="container" id="loginPage">
+    <h2>Psicologia</h2>
+    <p>Entre com sua conta Google</p>
+    <button id="googleLogin">Entrar com Google</button>
+  </div>
+
+  <!-- FORMULÁRIO -->
+  <div class="container hidden" id="formPage">
+    <div class="topo">Psicologia</div>
+    <h2>Cadastro de Sessão</h2>
+    <form id="form">
+      <input type="text" name="nomePaciente" placeholder="Nome do Paciente" required>
+      <input type="date" name="dataConsulta" required>
+      <textarea name="historico" placeholder="Histórico" rows="3" required></textarea>
+      <textarea name="evolucao" placeholder="Evolução" rows="3" required></textarea>
+      <button type="submit">Salvar Sessão</button>
+      <button type="button" id="verHistorico">Ver Histórico</button>
+      <button type="button" id="sair">Sair</button>
+    </form>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div class="container hidden" id="historicoPage">
+    <div class="topo">Psicologia</div>
+    <h2>Histórico de Sessões</h2>
+    <div id="historico"></div>
+    <button id="voltar">Voltar</button>
+  </div>
+
+  <script>
+    // 🔹 Configuração Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCqXUb8Fq44x3utPPOYp8VBGh9q8k4-1xE",
+      authDomain: "psico-17375.firebaseapp.com",
+      projectId: "psico-17375",
+      storageBucket: "psico-17375.appspot.com",
+      messagingSenderId: "1007635106888",
+      appId: "1:1007635106888:web:19a05353e41f9b0f5c8f0c"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    const loginPage = document.getElementById("loginPage");
+    const formPage = document.getElementById("formPage");
+    const historicoPage = document.getElementById("historicoPage");
+    const form = document.getElementById("form");
+    const historicoDiv = document.getElementById("historico");
+
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyGaa6EF45xEvUpiKAp0oKHJgtaSJDY0q33ff1L-ZlQ_nHI5rg34ZVR7DyjKNj-iAPMrQ/exec";
+
+    // 🔹 Login Google
+    document.getElementById("googleLogin").addEventListener("click", () => {
+      auth.signInWithPopup(provider)
+        .then(result => {
+          loginPage.classList.add("hidden");
+          formPage.classList.remove("hidden");
+        })
+        .catch(err => alert("Erro no login: " + err.message));
     });
 
-    return jsonResponse(formattedEvents);
-
-  } catch (error) {
-    Logger.log('Erro no handleGetAgenda: ' + error.toString());
-    return jsonResponse({ erro: 'Falha ao buscar agenda. ' + error.message });
-  }
-}
-
-function handleCreateEvent(e) {
-  try {
-    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
-    const id = e.parameter.id;
-    const title = e.parameter.title;
-    const start = new Date(e.parameter.start);
-    const end = new Date(e.parameter.end);
-    
-    if (id) {
-      // Modificar Evento Existente
-      const event = calendar.getEventById(id);
-      if (!event) return jsonResponse({ erro: 'Evento não encontrado para modificação.' });
-      
-      event.setTitle(title);
-      event.setTime(start, end);
-      
-    } else {
-      // Criar Novo Evento
-      calendar.createEvent(title, start, end);
-    }
-
-    return jsonResponse({ sucesso: true });
-
-  } catch (error) {
-    Logger.log('Erro no handleCreateEvent: ' + error.toString());
-    return jsonResponse({ erro: 'Falha ao salvar evento. ' + error.message });
-  }
-}
-
-function handleDeleteEvent(e) {
-  try {
-    const calendar = CalendarApp.getCalendarById(CALENDAR_ID);
-    const id = e.parameter.id;
-
-    const event = calendar.getEventById(id);
-    if (!event) {
-      return jsonResponse({ erro: 'Evento não encontrado para exclusão.' });
-    }
-
-    event.deleteEvent();
-
-    return jsonResponse({ sucesso: true });
-
-  } catch (error) {
-    Logger.log('Erro no handleDeleteEvent: ' + error.toString());
-    return jsonResponse({ erro: 'Falha ao excluir evento. ' + error.message });
-  }
-}
-
-
-// =======================================================
-// FUNÇÕES DE CLIENTES E SESSÕES (Google Sheets API)
-// =======================================================
-
-function cadastrarPaciente(dados) {
-  const sheet = getSheet(CLIENTES_SHEET_NAME);
-  if (!sheet) return jsonResponse({ erro: "Página de clientes não encontrada. Verifique o nome 'Página1'." });
-
-  // Colunas em Página1: Nome, CPF, Data_Nascimen, Tratamento, Preco_Sessao (e Data Cadastro)
-  const linhaParaSalvar = [
-    dados.nome || '',
-    dados.cpf || '',
-    dados.data_nascimen || '', 
-    dados.tratamento || '',
-    parseFloat(dados.preco) || 0, // Garante que o preço seja um número
-    new Date() // Coluna adicional: Data de Cadastro
-  ];
-
-  sheet.appendRow(linhaParaSalvar);
-  return jsonResponse({ sucesso: true, mensagem: "Cliente cadastrado com sucesso." });
-}
-
-function registrarSessao(dados) {
-  const sheet = getSheet(SESSOES_SHEET_NAME);
-  if (!sheet) return jsonResponse({ erro: "Página de sessões não encontrada. Verifique o nome 'Página2'." });
-
-  // Colunas em Página2: Sessões: Data, CPF_Paciente, Anotacao, Status_Pagame, Data_Pagamento
-  const linhaParaSalvar = [
-    dados.data_sessao,
-    dados.cpf,
-    dados.anotacao || '',
-    "PENDENTE", // Status inicial como PENDENTE
-    '' // Data_Pagamento vazia
-  ];
-
-  sheet.appendRow(linhaParaSalvar);
-  return jsonResponse({ sucesso: true, mensagem: "Sessão registrada." });
-}
-
-function marcarPagamento(cpf, dataInicioStr, dataFimStr) {
-    const sheetSessoes = getSheet(SESSOES_SHEET_NAME);
-    if (!sheetSessoes) return jsonResponse({ erro: "Página de sessões não encontrada." });
-
-    const dataInicio = new Date(dataInicioStr);
-    const dataFim = new Date(dataFimStr);
-
-    const dataRange = sheetSessoes.getDataRange();
-    const values = dataRange.getValues();
-    let sucesso = false;
-
-    // Começa da linha 2 (ignora o cabeçalho)
-    for (let i = 1; i < values.length; i++) {
-        const row = values[i];
-        const cpfSessao = row[1]; // Coluna B (CPF_Paciente)
-        const dataSessao = new Date(row[0]); // Coluna A (Sessões: Data)
-        const statusPagamento = row[3]; // Coluna D (Status_Pagame)
-
-        // Verifica se o CPF, o Status é PENDENTE e se a data está DENTRO do período
-        if (cpfSessao === cpf && 
-            statusPagamento === "PENDENTE" &&
-            dataSessao >= dataInicio &&
-            dataSessao <= dataFim) {
-            
-            // Marca como PAGO e adiciona a data de hoje
-            sheetSessoes.getRange(i + 1, 4).setValue("PAGO"); // Coluna D (Status_Pagame)
-            sheetSessoes.getRange(i + 1, 5).setValue(new Date()); // Coluna E (Data_Pagamento)
-            sucesso = true;
-        }
-    }
-    
-    return jsonResponse({ sucesso: sucesso, mensagem: sucesso ? "Pagamento marcado." : "Nenhuma sessão PENDENTE encontrada para marcar como paga no período." });
-}
-
-function buscarClienteCompleto(cpf) {
-  const sheetClientes = getSheet(CLIENTES_SHEET_NAME);
-  const sheetSessoes = getSheet(SESSOES_SHEET_NAME);
-
-  if (!sheetClientes || !sheetSessoes) return jsonResponse({ erro: "Planilhas de dados não encontradas." });
-
-  const clientes = sheetClientes.getDataRange().getValues();
-  const sessoes = sheetSessoes.getDataRange().getValues();
-  let paciente = null;
-
-  // 1. Busca o Paciente (Página1)
-  for (let i = 1; i < clientes.length; i++) {
-    const row = clientes[i];
-    if (row[1] === cpf) { // Coluna B (CPF)
-      paciente = {
-        nome: row[0],
-        cpf: row[1],
-        data_nascimen: row[2] ? new Date(row[2]).toLocaleDateString() : 'N/A', // Coluna C
-        tratamento: row[3] || 'N/A', // Coluna D
-        preco_sessao: row[4] || 0 // Coluna E
-      };
-      break;
-    }
-  }
-
-  if (!paciente) {
-    return jsonResponse({ erro: "Paciente não encontrado" });
-  }
-
-  // 2. Busca o Histórico de Sessões (Página2)
-  const historico = [];
-  let sessoesNoMes = 0;
-  const hoje = new Date();
-  const primeiroDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-
-  for (let i = 1; i < sessoes.length; i++) {
-    const row = sessoes[i];
-    if (row[1] === cpf) { // Coluna B (CPF_Paciente)
-      const dataSessao = new Date(row[0]); // Coluna A (Sessões: Data)
-      
-      historico.push({
-        data_sessao: dataSessao.toLocaleDateString(),
-        anotacao: row[2], // Coluna C (Anotacao)
-        status_pagamento: row[3], // Coluna D (Status_Pagame)
-        data_pagamento: row[4] ? new Date(row[4]).toLocaleDateString() : 'N/A' // Coluna E (Data_Pagamento)
+    // 🔹 Logout
+    document.getElementById("sair").addEventListener("click", () => {
+      auth.signOut().then(() => {
+        formPage.classList.add("hidden");
+        loginPage.classList.remove("hidden");
       });
-      
-      // Conta sessões no mês atual
-      if (dataSessao >= primeiroDiaDoMes && dataSessao <= hoje) {
-        sessoesNoMes++;
-      }
-    }
-  }
-  
-  // Ordena da mais recente para a mais antiga
-  historico.sort((a, b) => new Date(b.data_sessao) - new Date(a.data_sessao));
-
-
-  return jsonResponse({
-    sucesso: true,
-    paciente: paciente,
-    historico: historico,
-    sessoesNoMes: sessoesNoMes
-  });
-}
-
-function listarPacientes() {
-  const sheetClientes = getSheet(CLIENTES_SHEET_NAME);
-  if (!sheetClientes) return jsonResponse({ erro: "Planilha de clientes não encontrada." });
-
-  const clientes = sheetClientes.getDataRange().getValues();
-  const lista = [];
-
-  for (let i = 1; i < clientes.length; i++) {
-    const row = clientes[i];
-    lista.push({
-      nome: row[0], // Coluna A
-      cpf: row[1] // Coluna B
     });
-  }
 
-  return jsonResponse({ sucesso: true, pacientes: lista });
-}
+    // 🔹 Enviar dados à planilha
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const data = new FormData(form);
+      data.append("usuario", auth.currentUser ? auth.currentUser.email : "Anônimo");
+      data.append("dataEnvio", new Date().toLocaleString("pt-BR"));
 
-function gerarRelatorioFinanceiro(dataInicioStr, dataFimStr) {
-    const sheetClientes = getSheet(CLIENTES_SHEET_NAME);
-    const sheetSessoes = getSheet(SESSOES_SHEET_NAME);
-    if (!sheetClientes || !sheetSessoes) return jsonResponse({ erro: "Planilhas de dados não encontradas." });
-
-    const dataInicio = new Date(dataInicioStr);
-    const dataFim = new Date(dataFimStr);
-
-    const clientes = sheetClientes.getDataRange().getValues();
-    const sessoes = sheetSessoes.getDataRange().getValues();
-
-    // Cria um mapa de CPF -> Cliente e CPF -> Preço
-    const clientesMap = {};
-    for (let i = 1; i < clientes.length; i++) {
-        const row = clientes[i];
-        const cpf = row[1]; // Coluna B (CPF)
-        clientesMap[cpf] = {
-            nome: row[0], // Coluna A (Nome)
-            preco: parseFloat(row[4] || 0), // Coluna E (Preco_Sessao)
-            numSessoes: 0,
-            totalPagar: 0,
-            status: 'PAGO' // Status geral do cliente, será alterado se houver pendente
-        };
-    }
-    
-    let totalSessoes = 0;
-    let faturamentoTotal = 0;
-
-    // Processa as Sessões
-    for (let i = 1; i < sessoes.length; i++) {
-        const row = sessoes[i];
-        const dataSessao = new Date(row[0]); // Coluna A (Data)
-        const cpfSessao = row[1]; // Coluna B (CPF_Paciente)
-        const statusPagamento = row[3]; // Coluna D (Status_Pagame)
-
-        // 1. Verifica se a sessão está no período e se o cliente existe no mapa
-        if (dataSessao >= dataInicio && dataSessao <= dataFim && clientesMap[cpfSessao]) {
-            const cliente = clientesMap[cpfSessao];
-            
-            totalSessoes++;
-            cliente.numSessoes++;
-            
-            // Usamos o preço atual da sessão do cliente para calcular o total devido no período
-            const precoSessao = cliente.preco; 
-            cliente.totalPagar += precoSessao;
-            
-            // 2. Atualiza o status geral do cliente e contabiliza o faturamento
-            if (statusPagamento === "PENDENTE") {
-                cliente.status = 'PENDENTE';
-            } else if (statusPagamento === "PAGO") {
-                faturamentoTotal += precoSessao; // Contabiliza como faturamento
-            }
-        }
-    }
-    
-    // Converte o mapa de volta para um array, filtrando clientes com sessões no período
-    const detalhesClientes = Object.values(clientesMap).filter(c => c.numSessoes > 0);
-
-    return jsonResponse({
-        sucesso: true,
-        totalSessoes: totalSessoes,
-        faturamentoTotal: faturamentoTotal,
-        detalhesClientes: detalhesClientes
+      fetch(scriptURL, { method: "POST", body: data })
+        .then(() => {
+          alert("✅ Sessão salva com sucesso!");
+          form.reset();
+        })
+        .catch(() => alert("❌ Erro ao enviar os dados."));
     });
-}
+
+    // 🔹 Ver histórico
+    document.getElementById("verHistorico").addEventListener("click", () => {
+      formPage.classList.add("hidden");
+      historicoPage.classList.remove("hidden");
+      carregarHistorico();
+    });
+
+    // 🔹 Voltar do histórico
+    document.getElementById("voltar").addEventListener("click", () => {
+      historicoPage.classList.add("hidden");
+      formPage.classList.remove("hidden");
+    });
+
+    // 🔹 Buscar dados no Apps Script
+    function carregarHistorico() {
+      fetch(scriptURL + "?action=read")
+        .then(res => res.json())
+        .then(dados => {
+          if (!dados || dados.length === 0) {
+            historicoDiv.innerHTML = "<p>Nenhum registro encontrado.</p>";
+            return;
+          }
+          historicoDiv.innerHTML = dados.map(linha => `
+            <p><b>${linha.nomePaciente}</b><br>
+            Data: ${linha.dataConsulta}<br>
+            Histórico: ${linha.historico}<br>
+            Evolução: ${linha.evolucao}</p><hr>
+          `).join("");
+        })
+        .catch(() => historicoDiv.innerHTML = "<p>Erro ao carregar histórico.</p>");
+    }
+  </script>
+</body>
+</html>
