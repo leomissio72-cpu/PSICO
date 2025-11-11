@@ -1,233 +1,1134 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prontuário Psicológico</title>
-  <link href="https://script.google.com/macros/s/AKfycbwHP641yvS4sxgrJwt6yN3vopBvD5UqmrZzyFdF59TZez54XB6HVmTSSDJJrZFqgank/exec">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prontuário Psicológico — Dashboard</title>
+
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase (compat for your current usage) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f0f4f8;
-      margin: 0;
-      padding: 20px;
+    :root{
+      --sidebar-bg:#f8f9fa;
+      --accent: linear-gradient(90deg,#6d28d9,#4f46e5);
+      --panel-bg:#ffffff;
+      --surface:#f1f3f5;
+      --card:#ffffff;
+      --muted:#64748b;
+      --text-dark:#1e293b;
+      --white:#ffffff;
+      --border:#e2e8f0;
+      --success:#10b981;
+      --warning:#f59e0b;
+      --danger:#ef4444;
     }
 
-    .container {
-      max-width: 1000px;
-      margin: auto;
-      background: #fff;
-      padding: 40px;
-      border-radius: 16px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:'Poppins',sans-serif;background:#f1f5f9;color:var(--text-dark);-webkit-font-smoothing:antialiased}
+    
+    .app {
+      display:flex;
+      height:100vh;
+      width:100%;
+      overflow:hidden;
     }
 
-    h1, h2 {
-      text-align: center;
-      color: #2c3e50;
-      margin-bottom: 30px;
+    /* Sidebar */
+    .sidebar {
+      width:260px;
+      min-width:220px;
+      background: linear-gradient(180deg,#ffffff 0%, #f8f9fa 100%);
+      color:var(--text-dark);
+      padding:22px 16px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+      border-right:1px solid var(--border);
+      box-shadow: 2px 0 8px rgba(0,0,0,0.04);
     }
 
-    label {
-      font-weight: 600;
-      margin-top: 20px;
-      display: block;
-      color: #34495e;
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding-bottom:8px;
+      margin-bottom:4px;
+      border-bottom:1px solid var(--border);
+    }
+    .brand .logo {
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(135deg,#6d28d9,#4f46e5);
+      display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 6px 18px rgba(79,70,229,0.18);
+      color:#fff;
+    }
+    .brand h3{margin:0;font-size:15px;font-weight:600;color:var(--text-dark)}
+    .brand p{margin:0;font-size:12px;color:var(--muted)}
+
+    /* Nav */
+    .nav {
+      display:flex;flex-direction:column;gap:8px;margin-top:6px;
     }
 
-    input, textarea, select {
-      width: 100%;
+    .nav button {
+      display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:none;background:transparent;color:var(--text-dark);cursor:pointer;text-align:left;font-weight:500;
+      transition: all .18s ease;
+    }
+    .nav button:hover { background: rgba(109,40,217,0.08); transform: translateY(-2px); }
+    .nav button.active {
+      background: linear-gradient(90deg,rgba(109,40,217,0.1) 0%, rgba(79,70,229,0.08) 100%);
+      box-shadow: 0 4px 12px rgba(79,70,229,0.1);
+      transform: none;
+      color:#6d28d9;
+    }
+    .nav .material-icons { font-size:20px;color: #6d28d9 }
+
+    .sidebar-footer { margin-top:auto; display:flex;flex-direction:column;gap:8px }
+    .small-btn { padding:8px 10px; border-radius:8px; border:none; background:transparent; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:8px }
+    .small-btn:hover { color:var(--text-dark); background: rgba(109,40,217,0.05) }
+
+    /* Top header */
+    .topbar {
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:0 20px;
+      border-bottom:1px solid var(--border);
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .top-left {display:flex;align-items:center;gap:12px}
+    .page-title { font-size:18px; font-weight:600; color:var(--text-dark) }
+    .user-actions { display:flex; align-items:center; gap:12px }
+
+    .avatar {
+      width:40px;height:40px;border-radius:10px;background:linear-gradient(90deg,#6d28d9,#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:600;color:#fff;
+      box-shadow:0 6px 18px rgba(79,70,229,0.15)
+    }
+
+    /* Workspace / main content */
+    .workspace {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      background: #f1f5f9;
+    }
+
+    .main-area {
+      padding:20px;
+      height:calc(100vh - 64px);
+      overflow:auto;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius:12px;
+      padding:20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+    }
+
+    /* Grid */
+    .grid {
+      display:grid;
+      gap:18px;
+    }
+    .grid.cols-2 { grid-template-columns: 1fr 380px; }
+    .grid.cols-1 { grid-template-columns: 1fr; }
+
+    /* Form fields */
+    label{ display:block; font-size:13px; color:var(--muted); margin-top:12px; font-weight:600 }
+    input, select, textarea {
+      width:100%; padding:10px 12px; margin-top:6px; background:#fff; border:1px solid var(--border); color:var(--text-dark); border-radius:8px;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline:none;
+      border-color:#6d28d9;
+      box-shadow: 0 0 0 3px rgba(109,40,217,0.1);
+    }
+    textarea { min-height:110px; resize:vertical }
+    textarea:read-only { background: #f8f9fa; cursor: not-allowed; opacity: 0.7; }
+
+    .btn {
+      display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600;
+      transition: all 0.2s ease;
+    }
+    .btn.primary {
+      background: linear-gradient(90deg,#6d28d9,#4f46e5); color:#fff; box-shadow: 0 4px 12px rgba(79,70,229,0.2);
+    }
+    .btn.ghost { background: transparent; color:var(--muted); border:1px solid var(--border) }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.25); }
+    
+    .btn.toggle-btn {
+      background: #f8f9fa;
+      color: var(--text-dark);
+      border: 1px solid var(--border);
+    }
+    .btn.toggle-btn.active {
+      background: linear-gradient(90deg,#6d28d9,#4f46e5);
+      color: #fff;
+      border: 1px solid transparent;
+    }
+
+    .actions { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap: wrap; }
+
+    .session-card { 
+      background: #f8f9fa; 
+      padding:12px; 
+      border-radius:8px; 
+      border-left:4px solid #6d28d9; 
+      margin-bottom:12px; 
+      color:var(--text-dark);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .historico-preview {
+      background: rgba(109, 40, 217, 0.05);
+      border: 1px solid rgba(109, 40, 217, 0.2);
+      border-radius: 8px;
       padding: 12px;
-      margin-top: 8px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-      background-color: #eaf2ff;
+      margin-top: 12px;
+      max-height: 300px;
+      overflow-y: auto;
     }
 
-    button {
-      padding: 14px 24px;
-      margin-top: 30px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
+    .historico-preview .historico-item {
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fff;
+      border-radius: 6px;
+      border-left: 3px solid #6d28d9;
     }
 
-    button:hover {
-      background-color: #2980b9;
+    .historico-preview .historico-item:last-child {
+      margin-bottom: 0;
     }
 
-    .tabs {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 30px;
+    .historico-preview .date {
+      font-weight: 600;
+      color: #6d28d9;
+      font-size: 12px;
+      margin-bottom: 4px;
     }
 
-    .tab-button {
-      padding: 10px 20px;
-      margin: 0 10px;
-      background-color: #ecf0f1;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
+    .historico-preview .content {
+      color: var(--muted);
+      font-size: 13px;
     }
 
-    .tab-button.active {
-      background-color: #3498db;
-      color: white;
+    /* Status badges */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-compareceu { background: #d1fae5; color: #065f46; }
+    .status-faltou { background: #fee2e2; color: #991b1b; }
+    .status-reagendou { background: #fef3c7; color: #92400e; }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 13px;
+    }
+    td {
+      font-size: 14px;
+      color: var(--text-dark);
+    }
+    tr:hover {
+      background: #f8f9fa;
     }
 
-    .tab-content {
-      display: none;
+    /* Stats cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
     }
-
-    .tab-content.active {
-      display: block;
+    .stat-card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
+    .stat-card .label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .stat-card.success .value { color: var(--success); }
+    .stat-card.danger .value { color: var(--danger); }
+    .stat-card.warning .value { color: var(--warning); }
 
-    .session-card {
-      background: #f9fcff;
-      padding: 20px;
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      height: 300px;
       margin-top: 20px;
-      border-left: 6px solid #3498db;
-      border-radius: 12px;
+    }
+
+    /* Responsive */
+    @media (max-width:980px) {
+      .sidebar { width:64px; min-width:64px; padding:12px }
+      .brand h3, .brand p { display:none }
+      .nav button span.label { display:none }
+      .grid.cols-2 { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width:640px) {
+      .topbar { padding:8px 12px }
+      .main-area { padding:12px }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Prontuário Psicológico</h1>
+  <div class="app">
 
-    <div class="tabs">
-      <button class="tab-button active" data-tab="cadastro">Cadastro</button>
-      <button class="tab-button" data-tab="historico">Histórico</button>
-    </div>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="logo">PS</div>
+        <div>
+          <h3>Prontuário</h3>
+          <p>Clinica • Painel</p>
+        </div>
+      </div>
 
-    <div id="cadastro" class="tab-content active">
-      <form id="form">
-        <label>Nome:</label>
-        <select name="nome" id="nomeSelect" required>
-          <option value="">Selecione um paciente</option>
-        </select>
+      <nav class="nav" role="navigation" aria-label="menu lateral">
+        <button class="nav-btn active" data-tab="paciente" id="btn-paciente">
+          <span class="material-icons">person</span>
+          <span class="label">Paciente</span>
+        </button>
 
-        <label>Idade:</label>
-        <input type="number" name="idade" required />
+        <button class="nav-btn" data-tab="sessao" id="btn-sessao">
+          <span class="material-icons">forum</span>
+          <span class="label">Sessão</span>
+        </button>
 
-        <label>Contato:</label>
-        <input type="text" name="contato" required />
+        <button class="nav-btn" data-tab="historico" id="btn-historico">
+          <span class="material-icons">history</span>
+          <span class="label">Histórico</span>
+        </button>
 
-        <label>Data da Consulta:</label>
-        <input type="date" name="dataConsulta" required />
+        <button class="nav-btn" data-tab="frequencia" id="btn-frequencia">
+          <span class="material-icons">analytics</span>
+          <span class="label">Frequência</span>
+        </button>
+      </nav>
 
-        <label>Histórico Psicológico:</label>
-        <textarea name="historico" rows="4" required></textarea>
+      <div class="sidebar-footer">
+        <button class="small-btn" onclick="toggleSidebar()" title="Alternar menu">
+          <span class="material-icons">menu</span> <span class="label">Toggle</span>
+        </button>
 
-        <label>Evolução do Tratamento:</label>
-        <textarea name="evolucao" rows="4"></textarea>
+        <div style="height:8px"></div>
+        <div style="font-size:12px;color:var(--muted)"><strong>Conectado:</strong><div id="userEmail" style="margin-top:6px;color:var(--muted)"> — </div></div>
+      </div>
+    </aside>
 
-        <button type="submit">Salvar</button>
-      </form>
-    </div>
+    <!-- WORKSPACE -->
+    <div class="workspace">
+      <div class="topbar" id="topbar" style="display:none">
+        <div class="top-left">
+          <div class="page-title" id="pageTitle">Paciente</div>
+        </div>
 
-    <div id="historico" class="tab-content">
-      <h2>Histórico do Paciente</h2>
-      <select id="historicoSelect">
-        <option value="">Selecione um paciente</option>
-      </select>
-      <div id="historicoConteudo"></div>
+        <div class="user-actions">
+          <div id="userName" style="font-weight:600;color:var(--text-dark); margin-right:6px"></div>
+          <div class="avatar" id="userAvatar">U</div>
+          <button class="btn ghost" onclick="logoutGoogle()" title="Sair">
+            <span class="material-icons">logout</span>
+            <span>Sair</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="main-area" id="mainArea">
+        <div id="carregando" style="text-align:center;padding:30px;color:var(--muted)">Carregando...</div>
+
+        <!-- LOGIN CARD (quando deslogado) -->
+        <div id="loginCard" style="display:none">
+          <div class="card">
+            <h2>Bem-vindo</h2>
+            <p style="color:var(--muted)">Faça login com Google para acessar o prontuário.</p>
+            <div style="margin-top:18px">
+              <button class="btn primary" onclick="loginGoogle()">
+                <span class="material-icons">login</span> Entrar com Google
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SISTEMA -->
+        <div id="appContent" style="display:none">
+          <!-- Paciente Tab -->
+          <section id="paciente" class="card tab active">
+            <h3>Cadastro de Paciente</h3>
+            <div class="grid cols-2" style="margin-top:14px">
+              <div>
+                <form id="formPaciente">
+                  <label>Nome</label>
+                  <input type="text" name="nome" required />
+
+                  <label>Idade</label>
+                  <input type="number" name="idade" required />
+
+                  <label>Contato</label>
+                  <input type="text" name="contato" />
+
+                  <div style="margin-top:14px">
+                    <button class="btn primary" type="submit"><span class="material-icons">person_add</span> Cadastrar</button>
+                  </div>
+                </form>
+              </div>
+
+              <div>
+                <div class="card" style="padding:14px;background:#f8f9fa">
+                  <strong style="color:var(--muted)">Dica rápida</strong>
+                  <p style="margin-top:8px;color:var(--muted)">Use nomes completos para evitar duplicidade. Os pacientes cadastrados ficam disponíveis na aba Sessão e Histórico.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Sessão Tab -->
+          <section id="sessao" class="card tab" style="display:none">
+            <h3>Registrar Sessão</h3>
+            
+            <!-- Botões de Tipo de Consulta -->
+            <div style="margin-top:14px; margin-bottom:20px;">
+              <label style="margin-bottom:10px; display:block;">Tipo de Consulta</label>
+              <div class="actions" style="margin:0;">
+                <button type="button" class="btn toggle-btn active" id="btnPrimeiraConsulta" onclick="selecionarTipoConsulta('primeira')">
+                  <span class="material-icons">person_add</span> Primeira Consulta
+                </button>
+                <button type="button" class="btn toggle-btn" id="btnAcompanhamento" onclick="selecionarTipoConsulta('acompanhamento')">
+                  <span class="material-icons">update</span> Em Acompanhamento
+                </button>
+              </div>
+              <p style="color:var(--muted); font-size:12px; margin-top:8px;" id="tipoConsultaInfo">
+                Primeira consulta: histórico editável para novo paciente
+              </p>
+            </div>
+
+            <div style="margin-top:10px">
+              <form id="formSessao">
+                <input type="hidden" name="tipoConsulta" id="tipoConsultaInput" value="primeira" />
+                
+                <label>Paciente</label>
+                <select name="nome" id="nomeSessao" required></select>
+
+                <label>Data da Consulta</label>
+                <input type="date" name="dataConsulta" required />
+
+                <label>Status da Consulta</label>
+                <select name="statusConsulta" id="statusConsulta" required>
+                  <option value="Compareceu">✅ Compareceu</option>
+                  <option value="Faltou">❌ Faltou</option>
+                  <option value="Reagendou">📅 Reagendou</option>
+                </select>
+
+                <label>Histórico Psicológico</label>
+                <textarea name="historico" id="historicoTextarea"></textarea>
+                
+                <!-- Preview do histórico em modo acompanhamento -->
+                <div id="historicoPreview" style="display:none;">
+                  <label style="margin-top:12px;">Histórico Anterior do Paciente</label>
+                  <div class="historico-preview" id="historicoPreviewContent"></div>
+                </div>
+
+                <label>Evolução do Tratamento</label>
+                <textarea name="evolucao"></textarea>
+
+                <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn primary" type="submit"><span class="material-icons">save</span> Salvar Sessão</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <!-- Histórico Tab -->
+          <section id="historico" class="card tab" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3>Histórico do Paciente</h3>
+              <div style="color:var(--muted);font-size:13px">Exporte o histórico visível em PDF</div>
+            </div>
+
+            <div class="actions" style="margin-top:12px">
+              <select id="historicoSelect" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)"></select>
+
+              <button class="btn primary" onclick="verHistorico()"><span class="material-icons">search</span> Buscar Histórico</button>
+
+              <button class="btn primary" onclick="exportarPDF()"><span class="material-icons">picture_as_pdf</span> Exportar PDF</button>
+            </div>
+
+            <div id="historicoConteudo" style="margin-top:12px"></div>
+          </section>
+
+          <!-- Frequência Tab -->
+          <section id="frequencia" class="card tab" style="display:none">
+            <h3>Frequência de Consultas</h3>
+            
+            <!-- Filtros -->
+            <div class="actions" style="margin-top:16px">
+              <select id="frequenciaPaciente" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os pacientes</option>
+              </select>
+
+              <select id="frequenciaMes" style="min-width:150px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+
+              <select id="frequenciaAno" style="min-width:120px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os anos</option>
+              </select>
+
+              <button class="btn primary" onclick="atualizarFrequencia()">
+                <span class="material-icons">filter_alt</span> Filtrar
+              </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-top:20px">
+              <div class="stat-card">
+                <div class="label">Total de Consultas</div>
+                <div class="value" id="statTotal">0</div>
+              </div>
+              <div class="stat-card success">
+                <div class="label">Comparecimentos</div>
+                <div class="value" id="statCompareceu">0</div>
+              </div>
+              <div class="stat-card danger">
+                <div class="label">Faltas</div>
+                <div class="value" id="statFaltou">0</div>
+              </div>
+              <div class="stat-card warning">
+                <div class="label">Reagendamentos</div>
+                <div class="value" id="statReagendou">0</div>
+              </div>
+            </div>
+
+            <!-- Gráfico -->
+            <div class="card" style="margin-top:20px;padding:20px">
+              <h4 style="margin-bottom:16px">Frequência Mensal</h4>
+              <div class="chart-container">
+                <canvas id="frequenciaChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Tabela -->
+            <div style="margin-top:20px">
+              <h4 style="margin-bottom:12px">Detalhamento de Consultas</h4>
+              <div style="overflow-x:auto">
+                <table id="frequenciaTable">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Paciente</th>
+                      <th>Status</th>
+                      <th>Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="frequenciaTableBody">
+                    <tr>
+                      <td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma consulta encontrada</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbw-CkW5jNynUNgtNM33uCZ3x3VZUxfOmfmWiTNTTd7_RTS3R5-N97JaAI8JRYLqwOGa/exec";
-    const form = document.getElementById("form");
-    const nomeSelect = document.getElementById("nomeSelect");
-    const historicoSelect = document.getElementById("historicoSelect");
-    const painel = document.getElementById("historicoConteudo");
+    /* ---------------------------
+       Configurações & variáveis
+       --------------------------- */
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwHP641yvS4sxgrJwt6yN3vopBvD5UqmrZzyFdF59TZez54XB6HVmTSSDJJrZFqgank/exec";
 
-    async function atualizarListaDeNomes() {
-      try {
-        const response = await fetch(scriptURL);
-        const pacientes = await response.json();
-        const nomesUnicos = [...new Set(pacientes.map(p => p.nome))];
+    const btnPaciente = document.getElementById('btn-paciente');
+    const btnSessao = document.getElementById('btn-sessao');
+    const btnHistorico = document.getElementById('btn-historico');
+    const btnFrequencia = document.getElementById('btn-frequencia');
+    const tabs = document.querySelectorAll('.tab');
 
-        nomeSelect.innerHTML = '<option value="">Selecione um paciente</option>';
-        historicoSelect.innerHTML = '<option value="">Selecione um paciente</option>';
-        nomesUnicos.forEach(nome => {
-          const option1 = document.createElement("option");
-          option1.value = nome;
-          option1.textContent = nome;
-          nomeSelect.appendChild(option1);
+    const formPaciente = document.getElementById('formPaciente');
+    const formSessao = document.getElementById('formSessao');
+    const nomeSessao = document.getElementById('nomeSessao');
+    const historicoSelect = document.getElementById('historicoSelect');
+    const painel = document.getElementById('historicoConteudo');
+    const historicoTextarea = document.getElementById('historicoTextarea');
+    const historicoPreview = document.getElementById('historicoPreview');
+    const historicoPreviewContent = document.getElementById('historicoPreviewContent');
+    const tipoConsultaInput = document.getElementById('tipoConsultaInput');
 
-          const option2 = document.createElement("option");
-          option2.value = nome;
-          option2.textContent = nome;
-          historicoSelect.appendChild(option2);
-        });
-      } catch (error) {
-        console.error("Erro ao buscar pacientes:", error);
+    const topbar = document.getElementById('topbar');
+    const pageTitle = document.getElementById('pageTitle');
+    const mainArea = document.getElementById('mainArea');
+    const carregando = document.getElementById('carregando');
+
+    let tipoConsultaAtual = 'primeira';
+    let frequenciaChart = null;
+
+    /* Firebase config */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCznEr8M2lNu7nwCfGN_kcJZFM5lqRQdf8",
+      authDomain: "psico-17375.firebaseapp.com",
+      projectId: "psico-17375",
+      storageBucket: "psico-17375.appspot.com",
+      messagingSenderId: "405718265829",
+      appId: "1:405718265829:web:3e3974a0dc02080824890c",
+      measurementId: "G-P19R4LJJKS"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    /* ---------------------------
+       UI helpers
+       --------------------------- */
+    function setActiveNav(button) {
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+    }
+
+    function showTab(tabId) {
+      tabs.forEach(t => { t.style.display = 'none'; t.classList.remove('active'); });
+      const el = document.getElementById(tabId);
+      if (el) { el.style.display = 'block'; el.classList.add('active'); }
+      pageTitle.textContent = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+      
+      // Carregar dados específicos da aba
+      if (tabId === 'frequencia') {
+        atualizarFrequencia();
       }
     }
 
-    async function mostrarHistorico(nome) {
-      try {
-        const response = await fetch(scriptURL);
-        const pacientes = await response.json();
-        const sessoes = pacientes.filter(p => p.nome.toLowerCase() === nome.toLowerCase());
-
-        if (sessoes.length === 0) {
-          painel.innerHTML = "<p>Nenhum histórico encontrado.</p>";
-          return;
-        }
-
-        painel.innerHTML = sessoes.map(sessao => `
-          <div class="session-card">
-            <strong>Data:</strong> ${sessao.dataConsulta}<br>
-            <strong>Histórico:</strong> ${sessao.historico}<br>
-            <strong>Evolução:</strong> ${sessao.evolucao}
-          </div>
-        `).join("");
-      } catch (error) {
-        console.error("Erro ao buscar histórico:", error);
-      }
-    }
-
-    historicoSelect.addEventListener("change", () => {
-      const nome = historicoSelect.value;
-      if (!nome) return;
-      mostrarHistorico(nome);
-    });
-
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const formData = new FormData(form);
-
-      fetch(scriptURL, { method: "POST", body: formData })
-        .then(() => {
-          alert("✅ Paciente cadastrado com sucesso!");
-          form.reset();
-          atualizarListaDeNomes();
-          mostrarHistorico(formData.get("nome"));
-        })
-        .catch(() => {
-          alert("❌ Erro ao enviar. Verifique o script.");
-        });
-    });
-
-    document.querySelectorAll(".tab-button").forEach(button => {
-      button.addEventListener("click", () => {
-        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
-        button.classList.add("active");
-        document.getElementById(button.dataset.tab).classList.add("active");
+    document.querySelectorAll('.nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        setActiveNav(btn);
+        showTab(tab);
       });
     });
 
-    atualizarListaDeNomes();
+    function toggleSidebar() {
+      const sb = document.querySelector('.sidebar');
+      sb.style.width = sb.style.width === '64px' ? '260px' : '64px';
+      document.querySelectorAll('.nav .label, .brand h3, .brand p').forEach(el => {
+        el.style.display = (sb.style.width === '64px') ? 'none' : 'block';
+      });
+    }
+
+    /* ---------------------------
+       Tipo de Consulta
+       --------------------------- */
+    async function selecionarTipoConsulta(tipo) {
+      tipoConsultaAtual = tipo;
+      tipoConsultaInput.value = tipo;
+      
+      document.getElementById('btnPrimeiraConsulta').classList.toggle('active', tipo === 'primeira');
+      document.getElementById('btnAcompanhamento').classList.toggle('active', tipo === 'acompanhamento');
+      
+      const infoText = document.getElementById('tipoConsultaInfo');
+      if (tipo === 'primeira') {
+        infoText.textContent = 'Primeira consulta: histórico editável para novo paciente';
+        historicoTextarea.readOnly = false;
+        historicoTextarea.placeholder = 'Digite o histórico psicológico do paciente...';
+        historicoPreview.style.display = 'none';
+        historicoTextarea.value = '';
+      } else {
+        infoText.textContent = 'Em acompanhamento: histórico anterior será carregado automaticamente';
+        historicoTextarea.readOnly = true;
+        historicoTextarea.placeholder = 'O histórico será preenchido automaticamente ao selecionar o paciente';
+        
+        const nomeSelecionado = nomeSessao.value;
+        if (nomeSelecionado) {
+          await carregarHistoricoParaAcompanhamento(nomeSelecionado);
+        }
+      }
+    }
+
+    async function carregarHistoricoParaAcompanhamento(nome) {
+      if (!nome || tipoConsultaAtual !== 'acompanhamento') return;
+      
+      try {
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
+        if (!res.ok) throw new Error('Erro de rede');
+        const data = await res.json();
+        const sessoes = data.historico || [];
+        
+        if (sessoes.length === 0) {
+          historicoTextarea.value = 'Nenhum histórico anterior encontrado para este paciente.';
+          historicoPreview.style.display = 'none';
+          return;
+        }
+        
+        let historicoCompleto = '=== HISTÓRICO ANTERIOR DO PACIENTE ===\n\n';
+        sessoes.forEach((sessao, index) => {
+          const dataConsulta = sessao.dataConsulta || 'Data não informada';
+          historicoCompleto += `📅 ${dataConsulta}\n`;
+          historicoCompleto += `${sessao.historico || '(sem registro)'}\n`;
+          if (index < sessoes.length - 1) {
+            historicoCompleto += '\n---\n\n';
+          }
+        });
+        
+        historicoTextarea.value = historicoCompleto;
+        
+        historicoPreview.style.display = 'block';
+        let previewHTML = '';
+        sessoes.forEach(sessao => {
+          const dataConsulta = sessao.dataConsulta || 'Data não informada';
+          previewHTML += `
+            <div class="historico-item">
+              <div class="date">📅 ${dataConsulta}</div>
+              <div class="content">${sessao.historico || '(sem registro)'}</div>
+            </div>
+          `;
+        });
+        historicoPreviewContent.innerHTML = previewHTML;
+        
+      } catch (err) {
+        console.error('Erro ao carregar histórico:', err);
+        historicoTextarea.value = 'Erro ao carregar histórico anterior.';
+        historicoPreview.style.display = 'none';
+      }
+    }
+
+    nomeSessao.addEventListener('change', async function() {
+      if (tipoConsultaAtual === 'acompanhamento') {
+        await carregarHistoricoParaAcompanhamento(this.value);
+      }
+    });
+
+    /* ---------------------------
+       Data / fetch functions
+       --------------------------- */
+    async function atualizarListaDeNomes() {
+      carregando.innerText = 'Carregando pacientes...';
+      carregando.style.display = 'block';
+      try {
+        const res = await fetch(`${scriptURL}?action=listarPacientes`);
+        if (!res.ok) throw new Error('Erro de rede');
+        const data = await res.json();
+        const nomes = [...new Set(data.map(p => p.nome))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+        
+        nomeSessao.innerHTML = '<option value="">Selecione</option>';
+        historicoSelect.innerHTML = '<option value="">Selecione</option>';
+        document.getElementById('frequenciaPaciente').innerHTML = '<option value="">Todos os pacientes</option>';
+        
+        nomes.forEach(n => {
+          const opt1 = document.createElement('option'); opt1.value = n; opt1.textContent = n;
+          const opt2 = document.createElement('option'); opt2.value = n; opt2.textContent = n;
+          const opt3 = document.createElement('option'); opt3.value = n; opt3.textContent = n;
+          nomeSessao.appendChild(opt1);
+          historicoSelect.appendChild(opt2);
+          document.getElementById('frequenciaPaciente').appendChild(opt3);
+        });
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao carregar pacientes. Verifique a URL do Apps Script e permissões.');
+      } finally {
+        carregando.style.display = 'none';
+      }
+    }
+
+    async function verHistorico() {
+      const nome = historicoSelect.value;
+      if (!nome) { painel.innerHTML = '<p style="color:var(--muted)">Selecione um paciente.</p>'; return; }
+      painel.innerHTML = '<p style="color:var(--muted)">Buscando histórico...</p>';
+      try {
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
+        if (!res.ok) throw new Error('Erro de rede');
+        const data = await res.json();
+        const sessoes = data.historico || [];
+        if (!sessoes.length) { painel.innerHTML = `<p style="color:var(--muted)">Nenhum histórico encontrado para ${nome}.</p>`; return; }
+        painel.innerHTML = sessoes.map(sessao => {
+          const dataConsulta = sessao.dataConsulta || '(sem data)';
+          const status = sessao.statusConsulta || 'Não informado';
+          const statusClass = status.toLowerCase().replace(/\s/g, '');
+          return `<div class="session-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div style="font-weight:700;color:var(--text-dark)">📅 ${dataConsulta}</div>
+              <span class="status-badge status-${statusClass}">${status}</span>
+            </div>
+            <div style="margin-top:6px;color:var(--muted)"><strong>Histórico:</strong> ${sessao.historico || '(vazio)'}</div>
+            <div style="margin-top:6px;color:var(--muted)"><strong>Evolução:</strong> ${sessao.evolucao || '(vazio)'}</div>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        painel.innerHTML = `<p style="color:var(--muted)">Erro ao buscar histórico.</p>`;
+      }
+    }
+
+    /* ---------------------------
+       Frequência
+       --------------------------- */
+    async function atualizarFrequencia() {
+      const paciente = document.getElementById('frequenciaPaciente').value;
+      const mes = document.getElementById('frequenciaMes').value;
+      const ano = document.getElementById('frequenciaAno').value;
+      
+      try {
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente || '')}`);
+        if (!res.ok) throw new Error('Erro de rede');
+        const data = await res.json();
+        let sessoes = data.historico || [];
+        
+        // Se não tem paciente específico, buscar todas as sessões
+        if (!paciente) {
+          const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
+          const allData = await resAll.json();
+          sessoes = [];
+          for (const p of allData) {
+            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
+            const pacData = await resPac.json();
+            if (pacData.historico) {
+              pacData.historico.forEach(s => {
+                s.nomePaciente = p.nome;
+                sessoes.push(s);
+              });
+            }
+          }
+        } else {
+          sessoes.forEach(s => s.nomePaciente = paciente);
+        }
+        
+        // Filtrar por mês e ano
+        if (mes || ano) {
+          sessoes = sessoes.filter(s => {
+            if (!s.dataConsulta) return false;
+            const date = new Date(s.dataConsulta);
+            if (mes && (date.getMonth() + 1) !== parseInt(mes)) return false;
+            if (ano && date.getFullYear() !== parseInt(ano)) return false;
+            return true;
+          });
+        }
+        
+        // Atualizar stats
+        const total = sessoes.length;
+        const compareceu = sessoes.filter(s => s.statusConsulta === 'Compareceu').length;
+        const faltou = sessoes.filter(s => s.statusConsulta === 'Faltou').length;
+        const reagendou = sessoes.filter(s => s.statusConsulta === 'Reagendou').length;
+        
+        document.getElementById('statTotal').textContent = total;
+        document.getElementById('statCompareceu').textContent = compareceu;
+        document.getElementById('statFaltou').textContent = faltou;
+        document.getElementById('statReagendou').textContent = reagendou;
+        
+        // Atualizar tabela
+        const tbody = document.getElementById('frequenciaTableBody');
+        if (sessoes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma consulta encontrada</td></tr>';
+        } else {
+          tbody.innerHTML = sessoes.map(s => {
+            const status = s.statusConsulta || 'Não informado';
+            const statusClass = status.toLowerCase().replace(/\s/g, '');
+            const tipo = s.tipoConsulta === 'primeira' ? 'Primeira Consulta' : 'Acompanhamento';
+            return `<tr>
+              <td>${s.dataConsulta || 'Sem data'}</td>
+              <td>${s.nomePaciente || 'Sem nome'}</td>
+              <td><span class="status-badge status-${statusClass}">${status}</span></td>
+              <td>${tipo}</td>
+            </tr>`;
+          }).join('');
+        }
+        
+        // Atualizar gráfico
+        atualizarGrafico(sessoes);
+        
+      } catch (err) {
+        console.error('Erro ao atualizar frequência:', err);
+        alert('Erro ao carregar dados de frequência.');
+      }
+    }
+
+    function atualizarGrafico(sessoes) {
+      // Agrupar por mês
+      const mesesData = {};
+      sessoes.forEach(s => {
+        if (!s.dataConsulta) return;
+        const date = new Date(s.dataConsulta);
+        const mesAno = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        if (!mesesData[mesAno]) {
+          mesesData[mesAno] = { compareceu: 0, faltou: 0, reagendou: 0 };
+        }
+        const status = s.statusConsulta || '';
+        if (status === 'Compareceu') mesesData[mesAno].compareceu++;
+        else if (status === 'Faltou') mesesData[mesAno].faltou++;
+        else if (status === 'Reagendou') mesesData[mesAno].reagendou++;
+      });
+      
+      const labels = Object.keys(mesesData).sort();
+      const compareceuData = labels.map(l => mesesData[l].compareceu);
+      const faltouData = labels.map(l => mesesData[l].faltou);
+      const reagendouData = labels.map(l => mesesData[l].reagendou);
+      
+      const ctx = document.getElementById('frequenciaChart');
+      if (frequenciaChart) {
+        frequenciaChart.destroy();
+      }
+      
+      frequenciaChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Compareceu',
+              data: compareceuData,
+              backgroundColor: '#10b981',
+              borderColor: '#059669',
+              borderWidth: 1
+            },
+            {
+              label: 'Faltou',
+              data: faltouData,
+              backgroundColor: '#ef4444',
+              borderColor: '#dc2626',
+              borderWidth: 1
+            },
+            {
+              label: 'Reagendou',
+              data: reagendouData,
+              backgroundColor: '#f59e0b',
+              borderColor: '#d97706',
+              borderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Preencher anos no select
+    function preencherAnos() {
+      const anoSelect = document.getElementById('frequenciaAno');
+      const anoAtual = new Date().getFullYear();
+      for (let i = anoAtual; i >= anoAtual - 5; i--) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = i;
+        anoSelect.appendChild(opt);
+      }
+    }
+
+    /* ---------------------------
+       Forms
+       --------------------------- */
+    formPaciente.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(formPaciente);
+      fd.append('action','cadastrarPaciente');
+      try {
+        const res = await fetch(scriptURL, { method:'POST', body: fd });
+        const data = await res.json();
+        if (data.sucesso) {
+          alert('Paciente cadastrado com sucesso!');
+          formPaciente.reset();
+          await atualizarListaDeNomes();
+        } else {
+          throw new Error(data.erro || 'Erro ao cadastrar');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao cadastrar paciente: ' + err.message);
+      }
+    });
+
+    formSessao.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(formSessao);
+      fd.append('action','registrarSessao');
+      const nomeSel = formSessao.elements.nome.value;
+      try {
+        const res = await fetch(scriptURL, { method:'POST', body: fd });
+        const data = await res.json();
+        if (data.sucesso) {
+          alert('Sessão registrada com sucesso!');
+          formSessao.reset();
+          historicoTextarea.value = '';
+          historicoPreview.style.display = 'none';
+          selecionarTipoConsulta('primeira');
+          
+          if (document.getElementById('historico').style.display !== 'none' && historicoSelect.value === nomeSel) {
+            await verHistorico();
+          }
+        } else {
+          throw new Error(data.erro || 'Erro ao salvar sessão');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao registrar sessão: ' + err.message);
+      }
+    });
+
+    /* ---------------------------
+       PDF export (jsPDF)
+       --------------------------- */
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const nome = historicoSelect.value || 'Paciente';
+      if (!historicoSelect.value) { alert('Selecione um paciente para exportar.'); return; }
+      if (painel.innerHTML.trim() === '' || painel.innerHTML.includes('Selecione um paciente') || painel.innerHTML.includes('Nenhum histórico')) {
+        await verHistorico();
+      }
+
+      const doc = new jsPDF({ unit:'pt', format:'a4' });
+      const margin = 40;
+      let y = 60;
+      doc.setFont('Helvetica','bold');
+      doc.setFontSize(16);
+      doc.text(`Histórico Psicológico — ${nome}`, margin, y);
+      y += 20;
+      doc.setFontSize(10);
+      doc.setFont('Helvetica','normal');
+
+      const cards = document.querySelectorAll('.session-card');
+      if (!cards.length) { alert('Nenhuma sessão disponível para exportar.'); return; }
+
+      cards.forEach((card, idx) => {
+        const lines = card.innerText.split('\n').map(l => l.trim()).filter(Boolean);
+        doc.setFont('Helvetica','bold');
+        doc.setFontSize(12);
+        lines.forEach(line => {
+          const split = doc.splitTextToSize(line, 520);
+          if (y + (split.length * 12) > 800) { doc.addPage(); y = 60; }
+          doc.text(split, margin, y);
+          y += (split.length * 12) + 6;
+        });
+        y += 4;
+      });
+
+      doc.save(`Historico_${nome.replace(/\s+/g,'_')}.pdf`);
+    }
+
+    /* ---------------------------
+       Auth (Firebase)
+       --------------------------- */
+    function loginGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert('Erro ao logar: ' + err.message));
+    }
+
+    function logoutGoogle() {
+      auth.signOut().then(() => {
+        alert('Você saiu do sistema.');
+      }).catch(err => alert('Erro ao sair: ' + err.message));
+    }
+
+    auth.onAuthStateChanged(user => {
+      carregando.style.display = 'none';
+      if (user) {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        document.getElementById('topbar').style.display = 'flex';
+        document.getElementById('userEmail').textContent = user.email || '';
+        const avatar = document.getElementById('userAvatar');
+        document.getElementById('userName').textContent = user.displayName || '';
+        if (user.photoURL) avatar.style.backgroundImage = `url(${user.photoURL})`;
+        else avatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
+
+        atualizarListaDeNomes();
+        preencherAnos();
+        setActiveNav(btnPaciente);
+        showTab('paciente');
+      } else {
+        document.getElementById('loginCard').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+        document.getElementById('topbar').style.display = 'none';
+        document.getElementById('userEmail').textContent = ' — ';
+      }
+    });
+
+    window.loginGoogle = loginGoogle;
+    window.logoutGoogle = logoutGoogle;
+    window.verHistorico = verHistorico;
+    window.exportarPDF = exportarPDF;
+    window.toggleSidebar = toggleSidebar;
+    window.selecionarTipoConsulta = selecionarTipoConsulta;
+    window.atualizarFrequencia = atualizarFrequencia;
+
+    document.getElementById('btn-paciente').addEventListener('click', () => { setActiveNav(btnPaciente); showTab('paciente'); });
+    document.getElementById('btn-sessao').addEventListener('click', () => { setActiveNav(btnSessao); showTab('sessao'); });
+    document.getElementById('btn-historico').addEventListener('click', () => { setActiveNav(btnHistorico); showTab('historico'); });
+    document.getElementById('btn-frequencia').addEventListener('click', () => { setActiveNav(btnFrequencia); showTab('frequencia'); });
+
+    historicoSelect.addEventListener('change', () => {
+      if (document.getElementById('historico').style.display !== 'none') verHistorico();
+    });
   </script>
 </body>
 </html>
