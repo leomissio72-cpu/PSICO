@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Prontuário Psicológico — Dashboard</title>
 
-  <!-- Fonts &amp; Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&amp;display=swap" rel="stylesheet">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <!-- jsPDF -->
@@ -37,7 +37,7 @@
 
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;font-family:'Poppins',sans-serif;background:#f1f5f9;color:var(--text-dark);-webkit-font-smoothing:antialiased}
-
+    
     .app {
       display:flex;
       height:100vh;
@@ -173,7 +173,7 @@
     }
     .btn.ghost { background: transparent; color:var(--muted); border:1px solid var(--border) }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(79,70,229,0.25); }
-
+    
     .btn.toggle-btn {
       background: #f8f9fa;
       color: var(--text-dark);
@@ -196,6 +196,40 @@
       color:var(--text-dark);
       font-size: 13px;
       line-height: 1.6;
+    }
+
+    .historico-preview {
+      background: rgba(109, 40, 217, 0.05);
+      border: 1px solid rgba(109, 40, 217, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .historico-preview .historico-item {
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fff;
+      border-radius: 6px;
+      border-left: 3px solid #6d28d9;
+    }
+
+    .historico-preview .historico-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .historico-preview .date {
+      font-weight: 600;
+      color: #6d28d9;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .historico-preview .content {
+      color: var(--muted);
+      font-size: 13px;
     }
 
     /* Status badges */
@@ -397,7 +431,7 @@
           <!-- Sessão Tab -->
           <section id="sessao" class="card tab" style="display:none">
             <h3>Registrar Sessão</h3>
-
+            
             <!-- Botões de Tipo de Consulta -->
             <div style="margin-top:14px; margin-bottom:20px;">
               <label style="margin-bottom:10px; display:block;">Tipo de Consulta</label>
@@ -409,154 +443,147 @@
                   <span class="material-icons">update</span> Em Acompanhamento
                 </button>
               </div>
+              <p style="color:var(--muted); font-size:12px; margin-top:8px;" id="tipoConsultaInfo">
+                Primeira consulta: histórico editável para novo paciente
+              </p>
             </div>
 
-            <form id="formSessao">
-              <input type="hidden" name="tipoConsulta" id="tipoConsultaInput" value="primeira" />
+            <div style="margin-top:10px">
+              <form id="formSessao">
+                <input type="hidden" name="tipoConsulta" id="tipoConsultaInput" value="primeira" />
+                
+                <label>Paciente</label>
+                <select name="nome" id="nomeSessao" required></select>
 
-              <label>Paciente</label>
-              <select name="nome" id="nomeSessao" required>
-                <option value="">Selecione...</option>
-              </select>
+                <label>Data da Consulta</label>
+                <input type="date" name="dataConsulta" required />
 
-              <label>Data da Consulta</label>
-              <input type="date" name="dataConsulta" required />
+                <label>Status da Consulta</label>
+                <select name="statusConsulta" id="statusConsulta" required>
+                  <option value="Compareceu">✅ Compareceu</option>
+                  <option value="Faltou">❌ Faltou</option>
+                  <option value="Reagendou">📅 Reagendou</option>
+                </select>
 
-              <label>Status da Consulta</label>
-              <select name="statusConsulta" required>
-                <option value="Compareceu">Compareceu</option>
-                <option value="Faltou">Faltou</option>
-                <option value="Reagendou">Reagendou</option>
-              </select>
+                <label>Histórico Psicológico</label>
+                <textarea name="historico" id="historicoTextarea"></textarea>
+                
+                <!-- Preview do histórico em modo acompanhamento -->
+                <div id="historicoPreview" style="display:none;">
+                  <label style="margin-top:12px;">Histórico Anterior do Paciente</label>
+                  <div class="historico-preview" id="historicoPreviewContent"></div>
+                </div>
 
-              <label>Histórico Anterior</label>
-              <textarea name="historico" id="historicoTextarea" placeholder="Descreva o histórico inicial do paciente aqui..."></textarea>
+                <label>Evolução do Tratamento</label>
+                <textarea name="evolucao"></textarea>
 
-              <label>Evolução da Sessão</label>
-              <textarea name="evolucao" id="evolucaoTextarea" placeholder="Descreva a evolução do paciente nesta sessão..." required></textarea>
-
-              <div style="margin-top:14px">
-                <button class="btn primary" type="submit">
-                  <span class="material-icons">save</span> Salvar Sessão
-                </button>
-              </div>
-            </form>
+                <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn primary" type="submit"><span class="material-icons">save</span> Salvar Sessão</button>
+                </div>
+              </form>
+            </div>
           </section>
 
           <!-- Histórico Tab -->
           <section id="historico" class="card tab" style="display:none">
-            <h3>Histórico de Sessões</h3>
-
-            <div class="actions">
-              <label style="flex:1">
-                Paciente
-                <select id="historicoSelect">
-                  <option value="">Selecione um paciente</option>
-                </select>
-              </label>
-              <button class="btn primary" onclick="verHistorico()" style="margin-top:auto">
-                <span class="material-icons">search</span> Buscar
-              </button>
-              <button class="btn ghost" onclick="exportarPDF()" style="margin-top:auto">
-                <span class="material-icons">picture_as_pdf</span> Exportar PDF
-              </button>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3>Histórico do Paciente</h3>
+              <div style="color:var(--muted);font-size:13px">Exporte o histórico visível em PDF</div>
             </div>
 
-            <div id="painelHistorico" style="margin-top:20px">
-              <p style="color:var(--muted)">Selecione um paciente para ver o histórico.</p>
+            <div class="actions" style="margin-top:12px">
+              <select id="historicoSelect" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)"></select>
+
+              <button class="btn primary" onclick="verHistorico()"><span class="material-icons">search</span> Buscar Histórico</button>
+
+              <button class="btn primary" onclick="exportarPDF()"><span class="material-icons">picture_as_pdf</span> Exportar PDF</button>
             </div>
+
+            <div id="historicoConteudo" style="margin-top:12px"></div>
           </section>
 
           <!-- Frequência Tab -->
           <section id="frequencia" class="card tab" style="display:none">
-            <h3>Análise de Frequência</h3>
+            <h3>Frequência de Consultas</h3>
+            
+            <!-- Filtros -->
+            <div class="actions" style="margin-top:16px">
+              <select id="frequenciaPaciente" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os pacientes</option>
+              </select>
 
-            <div class="grid cols-2">
-              <div>
-                <label>Filtrar por Paciente</label>
-                <select id="frequenciaPaciente">
-                  <option value="">Todos os pacientes</option>
-                </select>
+              <select id="frequenciaMes" style="min-width:150px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
 
-                <label>Mês</label>
-                <select id="frequenciaMes">
-                  <option value="">Todos os meses</option>
-                  <option value="1">Janeiro</option>
-                  <option value="2">Fevereiro</option>
-                  <option value="3">Março</option>
-                  <option value="4">Abril</option>
-                  <option value="5">Maio</option>
-                  <option value="6">Junho</option>
-                  <option value="7">Julho</option>
-                  <option value="8">Agosto</option>
-                  <option value="9">Setembro</option>
-                  <option value="10">Outubro</option>
-                  <option value="11">Novembro</option>
-                  <option value="12">Dezembro</option>
-                </select>
+              <select id="frequenciaAno" style="min-width:120px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os anos</option>
+              </select>
 
-                <label>Ano</label>
-                <select id="frequenciaAno"></select>
-
-                <div style="margin-top:14px">
-                  <button class="btn primary" onclick="atualizarFrequencia()">
-                    <span class="material-icons">refresh</span> Atualizar Análise
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <div class="card" style="padding:14px;background:#f8f9fa">
-                  <strong style="color:var(--muted)">O que você vê aqui</strong>
-                  <p style="margin-top:8px;color:var(--muted)">Gráfico e estatísticas de frequência por status de consulta (Compareceu, Faltou, Reagendou). Filtre por paciente, mês ou ano para análises específicas.</p>
-                </div>
-              </div>
+              <button class="btn primary" onclick="atualizarFrequencia()">
+                <span class="material-icons">filter_alt</span> Filtrar
+              </button>
             </div>
 
-            <!-- Estatísticas -->
-            <div class="stats-grid">
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-top:20px">
               <div class="stat-card">
                 <div class="label">Total de Consultas</div>
                 <div class="value" id="statTotal">0</div>
               </div>
               <div class="stat-card success">
-                <div class="label">Compareceu</div>
+                <div class="label">Comparecimentos</div>
                 <div class="value" id="statCompareceu">0</div>
               </div>
               <div class="stat-card danger">
-                <div class="label">Faltou</div>
+                <div class="label">Faltas</div>
                 <div class="value" id="statFaltou">0</div>
               </div>
               <div class="stat-card warning">
-                <div class="label">Reagendou</div>
+                <div class="label">Reagendamentos</div>
                 <div class="value" id="statReagendou">0</div>
               </div>
             </div>
 
-            <!-- Tabela -->
-            <div class="card">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Paciente</th>
-                    <th>Status</th>
-                    <th>Tipo</th>
-                  </tr>
-                </thead>
-                <tbody id="frequenciaTableBody">
-                  <tr>
-                    <td colspan="4" style="text-align:center;color:var(--muted)">Clique em "Atualizar Análise" para ver os dados</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
             <!-- Gráfico -->
-            <div class="card">
-              <label>Gráfico de Frequência</label>
+            <div class="card" style="margin-top:20px;padding:20px">
+              <h4 style="margin-bottom:16px">Frequência Mensal</h4>
               <div class="chart-container">
                 <canvas id="frequenciaChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Tabela -->
+            <div style="margin-top:20px">
+              <h4 style="margin-bottom:12px">Detalhamento de Consultas</h4>
+              <div style="overflow-x:auto">
+                <table id="frequenciaTable">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Paciente</th>
+                      <th>Status</th>
+                      <th>Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="frequenciaTableBody">
+                    <tr>
+                      <td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma consulta encontrada</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>
@@ -566,207 +593,182 @@
   </div>
 
   <script>
-    // Configuração Firebase (SUBSTITUA COM AS SUAS CREDENCIAIS REAIS!)
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY", // <-- SUBSTITUA AQUI
-      authDomain: "YOUR_AUTH_DOMAIN", // <-- SUBSTITUA AQUI
-      projectId: "YOUR_PROJECT_ID", // <-- SUBSTITUA AQUI
-      storageBucket: "YOUR_STORAGE_BUCKET", // <-- SUBSTITUA AQUI
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID", // <-- SUBSTITUA AQUI
-      appId: "YOUR_APP_ID" // <-- SUBSTITUA AQUI
-    };
+    /* ---------------------------
+       Configurações & variáveis
+       --------------------------- */
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwHP641yvS4sxgrJwt6yN3vopBvD5UqmrZzyFdF59TZez54XB6HVmTSSDJJrZFqgank/exec";
 
+    const btnPaciente = document.getElementById('btn-paciente');
+    const btnSessao = document.getElementById('btn-sessao');
+    const btnHistorico = document.getElementById('btn-historico');
+    const btnFrequencia = document.getElementById('btn-frequencia');
+    const tabs = document.querySelectorAll('.tab');
+
+    const formPaciente = document.getElementById('formPaciente');
+    const formSessao = document.getElementById('formSessao');
+    const nomeSessao = document.getElementById('nomeSessao');
+    const historicoSelect = document.getElementById('historicoSelect');
+    const painel = document.getElementById('historicoConteudo');
+    const historicoTextarea = document.getElementById('historicoTextarea');
+    const historicoPreview = document.getElementById('historicoPreview');
+    const historicoPreviewContent = document.getElementById('historicoPreviewContent');
+    const tipoConsultaInput = document.getElementById('tipoConsultaInput');
+
+    const topbar = document.getElementById('topbar');
+    const pageTitle = document.getElementById('pageTitle');
+    const mainArea = document.getElementById('mainArea');
+    const carregando = document.getElementById('carregando');
+
+    let tipoConsultaAtual = 'primeira';
+    let frequenciaChart = null;
+
+    /* Firebase config */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCznEr8M2lNu7nwCfGN_kcJZFM5lqRQdf8",
+      authDomain: "psico-17375.firebaseapp.com",
+      projectId: "psico-17375",
+      storageBucket: "psico-17375.appspot.com",
+      messagingSenderId: "405718265829",
+      appId: "1:405718265829:web:3e3974a0dc02080824890c",
+      measurementId: "G-P19R4LJJKS"
+    };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // Configurações (SUBSTITUA COM A URL DO SEU GOOGLE APPS SCRIPT!)
-    const scriptURL = 'https://script.google.com/macros/s/SEU_SCRIPT_ID/exec'; // <-- SUBSTITUA AQUI
+    /* ---------------------------
+       UI helpers
+       --------------------------- */
+    function setActiveNav(button) {
+      document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+    }
 
-    let frequenciaChart = null;
-    let tipoConsultaAtual = 'primeira'; // Variável global para controlar o tipo de consulta
+    function showTab(tabId) {
+      tabs.forEach(t => { t.style.display = 'none'; t.classList.remove('active'); });
+      const el = document.getElementById(tabId);
+      if (el) { el.style.display = 'block'; el.classList.add('active'); }
+      pageTitle.textContent = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+      
+      // Carregar dados específicos da aba
+      if (tabId === 'frequencia') {
+        atualizarFrequencia();
+      }
+    }
 
-    // Elementos DOM (declarados globalmente para fácil acesso)
-    let btnPaciente, btnSessao, btnHistorico, btnFrequencia;
-    let formPaciente, formSessao, nomeSessao, historicoSelect, historicoTextarea, evolucaoTextarea, painel, carregando;
-
-    // Inicialização
-    document.addEventListener('DOMContentLoaded', async () => {
-      // Atribuição dos elementos DOM
-      btnPaciente = document.getElementById('btn-paciente');
-      btnSessao = document.getElementById('btn-sessao');
-      btnHistorico = document.getElementById('btn-historico');
-      btnFrequencia = document.getElementById('btn-frequencia');
-      formPaciente = document.getElementById('formPaciente');
-      formSessao = document.getElementById('formSessao');
-      nomeSessao = document.getElementById('nomeSessao');
-      historicoSelect = document.getElementById('historicoSelect');
-      historicoTextarea = document.getElementById('historicoTextarea');
-      evolucaoTextarea = document.getElementById('evolucaoTextarea');
-      painel = document.getElementById('painelHistorico');
-      carregando = document.getElementById('carregando');
-
-      // Event listeners de navegação
-      document.getElementById('btn-paciente').addEventListener('click', () => { setActiveNav(btnPaciente); showTab('paciente'); });
-      document.getElementById('btn-sessao').addEventListener('click', () => { setActiveNav(btnSessao); showTab('sessao'); });
-      document.getElementById('btn-historico').addEventListener('click', () => { setActiveNav(btnHistorico); showTab('historico'); });
-      document.getElementById('btn-frequencia').addEventListener('click', () => { setActiveNav(btnFrequencia); showTab('frequencia'); });
-
-      // Event listeners dos forms
-      formPaciente.addEventListener('submit', handleCadastroPaciente);
-      formSessao.addEventListener('submit', handleRegistrarSessao);
-
-      // Event listener para seleção de paciente na aba Sessão
-      nomeSessao.addEventListener('change', async function() {
-        console.log('Paciente selecionado:', this.value, 'Tipo de consulta atual:', tipoConsultaAtual);
-        if (tipoConsultaAtual === 'acompanhamento') {
-          await carregarHistoricoAnterior(this.value); // Passa o nome do paciente selecionado
-        } else {
-          historicoTextarea.value = ''; // Limpa se não estiver em modo 'acompanhamento'
-          historicoTextarea.placeholder = 'Descreva o histórico inicial do paciente aqui...';
-        }
-      });
-
-      // Event listener para seleção de paciente na aba Histórico
-      historicoSelect.addEventListener('change', () => {
-        if (document.getElementById('historico').style.display !== 'none') verHistorico();
-      });
-
-      // Inicializar anos no filtro de frequência
-      preencherAnos();
-
-      // Verificar autenticação Firebase
-      auth.onAuthStateChanged(async user => { // Tornar a função async
-        carregando.style.display = 'none'; // Esconde o carregamento inicial
-
-        if (user) {
-          document.getElementById('loginCard').style.display = 'none';
-          document.getElementById('appContent').style.display = 'block';
-          document.getElementById('topbar').style.display = 'flex';
-          document.getElementById('userEmail').textContent = user.email || '';
-          const avatar = document.getElementById('userAvatar');
-          document.getElementById('userName').textContent = user.displayName || '';
-          if (user.photoURL) avatar.style.backgroundImage = `url(${user.photoURL})`;
-          else avatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
-
-          // Exibir um carregamento específico para os dados iniciais
-          carregando.textContent = 'Carregando dados iniciais...';
-          carregando.style.display = 'block';
-
-          await atualizarListaDeNomes(); // Aguarda o carregamento dos nomes
-
-          // Esconde o carregamento após todos os dados serem carregados
-          carregando.style.display = 'none';
-
-          // Define a aba inicial e o tipo de consulta padrão
-          setActiveNav(btnPaciente);
-          showTab('paciente');
-          selecionarTipoConsulta('primeira'); // Garante que a primeira consulta seja o padrão
-        } else {
-          document.getElementById('loginCard').style.display = 'block';
-          document.getElementById('appContent').style.display = 'none';
-          document.getElementById('topbar').style.display = 'none';
-          document.getElementById('userEmail').textContent = ' — ';
-        }
+    document.querySelectorAll('.nav button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        setActiveNav(btn);
+        showTab(tab);
       });
     });
 
-    // Funções de navegação
-    function setActiveNav(activeBtn) {
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-      activeBtn.classList.add('active');
-    }
-
-    function showTab(tabName) {
-      document.querySelectorAll('.tab').forEach(tab => tab.style.display = 'none');
-      document.getElementById(tabName).style.display = 'block';
-      document.getElementById('pageTitle').textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1);
-    }
-
     function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      sidebar.classList.toggle('collapsed');
+      const sb = document.querySelector('.sidebar');
+      sb.style.width = sb.style.width === '64px' ? '260px' : '64px';
+      document.querySelectorAll('.nav .label, .brand h3, .brand p').forEach(el => {
+        el.style.display = (sb.style.width === '64px') ? 'none' : 'block';
+      });
     }
 
-    // Função para selecionar tipo de consulta (CORRIGIDA)
-    function selecionarTipoConsulta(tipo) {
-      tipoConsultaAtual = tipo; // CORREÇÃO CRÍTICA: Atualiza a variável global
-      document.getElementById('tipoConsultaInput').value = tipo; // Atualiza o input hidden
-
-      // Atualizar botões visuais
-      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+    /* ---------------------------
+       Tipo de Consulta
+       --------------------------- */
+    async function selecionarTipoConsulta(tipo) {
+      tipoConsultaAtual = tipo;
+      tipoConsultaInput.value = tipo;
+      
+      document.getElementById('btnPrimeiraConsulta').classList.toggle('active', tipo === 'primeira');
+      document.getElementById('btnAcompanhamento').classList.toggle('active', tipo === 'acompanhamento');
+      
+      const infoText = document.getElementById('tipoConsultaInfo');
       if (tipo === 'primeira') {
-        document.getElementById('btnPrimeiraConsulta').classList.add('active');
-        document.getElementById('btnAcompanhamento').classList.remove('active');
+        infoText.textContent = 'Primeira consulta: histórico editável para novo paciente';
         historicoTextarea.readOnly = false;
-        historicoTextarea.style.background = '#fff';
+        historicoTextarea.placeholder = 'Digite o histórico psicológico do paciente...';
+        historicoPreview.style.display = 'none';
         historicoTextarea.value = '';
-        historicoTextarea.placeholder = 'Descreva o histórico inicial do paciente aqui...'; // Placeholder ajustado
-      } else { // 'acompanhamento'
-        document.getElementById('btnAcompanhamento').classList.add('active');
-        document.getElementById('btnPrimeiraConsulta').classList.remove('active');
+      } else {
+        infoText.textContent = 'Em acompanhamento: histórico anterior será carregado automaticamente';
         historicoTextarea.readOnly = true;
-        historicoTextarea.style.background = '#f8f9fa';
-        historicoTextarea.placeholder = 'Carregando histórico anterior...';
-        // Se um paciente já estiver selecionado, carrega o histórico imediatamente
-        if (nomeSessao.value) {
-          carregarHistoricoAnterior(nomeSessao.value);
-        } else {
-          historicoTextarea.value = 'Selecione um paciente para carregar o histórico.';
+        historicoTextarea.placeholder = 'O histórico será preenchido automaticamente ao selecionar o paciente';
+        
+        const nomeSelecionado = nomeSessao.value;
+        if (nomeSelecionado) {
+          await carregarHistoricoParaAcompanhamento(nomeSelecionado);
         }
       }
-      console.log('Tipo de consulta alterado para:', tipoConsultaAtual);
     }
 
-    // Função para carregar histórico anterior (CORRIGIDA)
-    async function carregarHistoricoAnterior(nomePaciente) {
-      console.log('Tentando carregar histórico para:', nomePaciente);
-      if (!nomePaciente) {
-        historicoTextarea.value = 'Selecione um paciente para carregar o histórico.';
-        return;
-      }
-
-      historicoTextarea.value = 'Carregando histórico...';
+    async function carregarHistoricoParaAcompanhamento(nome) {
+      if (!nome || tipoConsultaAtual !== 'acompanhamento') return;
+      
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(nomePaciente)}`);
-        if (!res.ok) throw new Error('Erro de rede ao buscar histórico');
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
+        if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const sessoes = data.historico || [];
-
-        if (sessoes.length > 0) {
-          // Formata o histórico para ser exibido no textarea
-          const historicoFormatado = sessoes.map((sessao, index) => {
-            const dataConsulta = sessao.dataConsulta || 'Sem data';
-            const historico = sessao.historico || 'Sem histórico';
-            const evolucao = sessao.evolucao || 'Sem evolução';
-
-            return `=== SESSÃO ${index + 1} - ${dataConsulta} ===\n\nHistórico: ${historico}\n\nEvolução: ${evolucao}`;
-          }).join('\n\n' + '='.repeat(50) + '\n\n'); // Separador visual entre sessões
-
-          historicoTextarea.value = historicoFormatado;
-          console.log('Histórico carregado com sucesso para:', nomePaciente);
-        } else {
+        
+        if (sessoes.length === 0) {
           historicoTextarea.value = 'Nenhum histórico anterior encontrado para este paciente.';
-          console.log('Nenhum histórico encontrado para:', nomePaciente);
+          historicoPreview.style.display = 'none';
+          return;
         }
+        
+        let historicoCompleto = '=== HISTÓRICO ANTERIOR DO PACIENTE ===\n\n';
+        sessoes.forEach((sessao, index) => {
+          const dataConsulta = sessao.dataConsulta || 'Data não informada';
+          historicoCompleto += `📅 ${dataConsulta}\n`;
+          historicoCompleto += `${sessao.historico || '(sem registro)'}\n`;
+          if (index < sessoes.length - 1) {
+            historicoCompleto += '\n---\n\n';
+          }
+        });
+        
+        historicoTextarea.value = historicoCompleto;
+        
+        historicoPreview.style.display = 'block';
+        let previewHTML = '';
+        sessoes.forEach(sessao => {
+          const dataConsulta = sessao.dataConsulta || 'Data não informada';
+          previewHTML += `
+            <div class="historico-item">
+              <div class="date">📅 ${dataConsulta}</div>
+              <div class="content">${sessao.historico || '(sem registro)'}</div>
+            </div>
+          `;
+        });
+        historicoPreviewContent.innerHTML = previewHTML;
+        
       } catch (err) {
         console.error('Erro ao carregar histórico:', err);
         historicoTextarea.value = 'Erro ao carregar histórico anterior.';
+        historicoPreview.style.display = 'none';
       }
     }
 
-    // Atualizar lista de nomes
+    nomeSessao.addEventListener('change', async function() {
+      if (tipoConsultaAtual === 'acompanhamento') {
+        await carregarHistoricoParaAcompanhamento(this.value);
+      }
+    });
+
+    /* ---------------------------
+       Data / fetch functions
+       --------------------------- */
     async function atualizarListaDeNomes() {
+      carregando.innerText = 'Carregando pacientes...';
+      carregando.style.display = 'block';
       try {
         const res = await fetch(`${scriptURL}?action=listarPacientes`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const nomes = [...new Set(data.map(p => p.nome))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-
-        // Limpar selects
-        nomeSessao.innerHTML = '<option value="">Selecione...</option>';
-        historicoSelect.innerHTML = '<option value="">Selecione um paciente</option>';
+        
+        nomeSessao.innerHTML = '<option value="">Selecione</option>';
+        historicoSelect.innerHTML = '<option value="">Selecione</option>';
         document.getElementById('frequenciaPaciente').innerHTML = '<option value="">Todos os pacientes</option>';
-
+        
         nomes.forEach(n => {
           const opt1 = document.createElement('option'); opt1.value = n; opt1.textContent = n;
           const opt2 = document.createElement('option'); opt2.value = n; opt2.textContent = n;
@@ -778,30 +780,21 @@
       } catch (err) {
         console.error(err);
         alert('Erro ao carregar pacientes. Verifique a URL do Apps Script e permissões.');
+      } finally {
+        carregando.style.display = 'none';
       }
     }
 
-    // Ver histórico
     async function verHistorico() {
       const nome = historicoSelect.value;
-      if (!nome) { 
-        painel.innerHTML = '<p style="color:var(--muted)">Selecione um paciente.</p>'; 
-        return; 
-      }
-
+      if (!nome) { painel.innerHTML = '<p style="color:var(--muted)">Selecione um paciente.</p>'; return; }
       painel.innerHTML = '<p style="color:var(--muted)">Buscando histórico...</p>';
-
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(nome)}`);
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const sessoes = data.historico || [];
-
-        if (!sessoes.length) { 
-          painel.innerHTML = `<p style="color:var(--muted)">Nenhum histórico encontrado para ${nome}.</p>`; 
-          return; 
-        }
-
+        if (!sessoes.length) { painel.innerHTML = `<p style="color:var(--muted)">Nenhum histórico encontrado para ${nome}.</p>`; return; }
         painel.innerHTML = sessoes.map(sessao => {
           const dataConsulta = sessao.dataConsulta || '(sem data)';
           const status = sessao.statusConsulta || 'Não informado';
@@ -821,24 +814,27 @@
       }
     }
 
-    // Atualizar frequência
+    /* ---------------------------
+       Frequência
+       --------------------------- */
     async function atualizarFrequencia() {
       const paciente = document.getElementById('frequenciaPaciente').value;
       const mes = document.getElementById('frequenciaMes').value;
       const ano = document.getElementById('frequenciaAno').value;
-
+      
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(paciente || '')}`);
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente || '')}`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         let sessoes = data.historico || [];
-
+        
+        // Se não tem paciente específico, buscar todas as sessões
         if (!paciente) {
           const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
           const allData = await resAll.json();
           sessoes = [];
           for (const p of allData) {
-            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(p.nome)}`);
+            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
             const pacData = await resPac.json();
             if (pacData.historico) {
               pacData.historico.forEach(s => {
@@ -850,27 +846,30 @@
         } else {
           sessoes.forEach(s => s.nomePaciente = paciente);
         }
-
+        
+        // Filtrar por mês e ano
         if (mes || ano) {
           sessoes = sessoes.filter(s => {
             if (!s.dataConsulta) return false;
             const date = new Date(s.dataConsulta);
-            if (mes &amp;&amp; (date.getMonth() + 1) !== parseInt(mes)) return false;
-            if (ano &amp;&amp; date.getFullYear() !== parseInt(ano)) return false;
+            if (mes && (date.getMonth() + 1) !== parseInt(mes)) return false;
+            if (ano && date.getFullYear() !== parseInt(ano)) return false;
             return true;
           });
         }
-
+        
+        // Atualizar stats
         const total = sessoes.length;
         const compareceu = sessoes.filter(s => s.statusConsulta === 'Compareceu').length;
         const faltou = sessoes.filter(s => s.statusConsulta === 'Faltou').length;
         const reagendou = sessoes.filter(s => s.statusConsulta === 'Reagendou').length;
-
+        
         document.getElementById('statTotal').textContent = total;
         document.getElementById('statCompareceu').textContent = compareceu;
         document.getElementById('statFaltou').textContent = faltou;
         document.getElementById('statReagendou').textContent = reagendou;
-
+        
+        // Atualizar tabela
         const tbody = document.getElementById('frequenciaTableBody');
         if (sessoes.length === 0) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma consulta encontrada</td></tr>';
@@ -887,9 +886,10 @@
             </tr>`;
           }).join('');
         }
-
+        
+        // Atualizar gráfico
         atualizarGrafico(sessoes);
-
+        
       } catch (err) {
         console.error('Erro ao atualizar frequência:', err);
         alert('Erro ao carregar dados de frequência.');
@@ -897,6 +897,7 @@
     }
 
     function atualizarGrafico(sessoes) {
+      // Agrupar por mês
       const mesesData = {};
       sessoes.forEach(s => {
         if (!s.dataConsulta) return;
@@ -910,17 +911,17 @@
         else if (status === 'Faltou') mesesData[mesAno].faltou++;
         else if (status === 'Reagendou') mesesData[mesAno].reagendou++;
       });
-
+      
       const labels = Object.keys(mesesData).sort();
       const compareceuData = labels.map(l => mesesData[l].compareceu);
       const faltouData = labels.map(l => mesesData[l].faltou);
       const reagendouData = labels.map(l => mesesData[l].reagendou);
-
+      
       const ctx = document.getElementById('frequenciaChart');
       if (frequenciaChart) {
         frequenciaChart.destroy();
       }
-
+      
       frequenciaChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -972,6 +973,7 @@
       });
     }
 
+    // Preencher anos no select
     function preencherAnos() {
       const anoSelect = document.getElementById('frequenciaAno');
       const anoAtual = new Date().getFullYear();
@@ -983,17 +985,19 @@
       }
     }
 
-    // Funções de manipulação de formulários
-    async function handleCadastroPaciente(e) {
+    /* ---------------------------
+       Forms
+       --------------------------- */
+    formPaciente.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
+      const fd = new FormData(formPaciente);
       fd.append('action','cadastrarPaciente');
       try {
         const res = await fetch(scriptURL, { method:'POST', body: fd });
         const data = await res.json();
         if (data.sucesso) {
           alert('Paciente cadastrado com sucesso!');
-          e.target.reset();
+          formPaciente.reset();
           await atualizarListaDeNomes();
         } else {
           throw new Error(data.erro || 'Erro ao cadastrar');
@@ -1002,24 +1006,24 @@
         console.error(err);
         alert('Erro ao cadastrar paciente: ' + err.message);
       }
-    }
+    });
 
-    async function handleRegistrarSessao(e) {
+    formSessao.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target);
+      const fd = new FormData(formSessao);
       fd.append('action','registrarSessao');
-      const nomeSel = e.target.elements.nome.value;
+      const nomeSel = formSessao.elements.nome.value;
       try {
         const res = await fetch(scriptURL, { method:'POST', body: fd });
         const data = await res.json();
         if (data.sucesso) {
           alert('Sessão registrada com sucesso!');
-          e.target.reset();
+          formSessao.reset();
           historicoTextarea.value = '';
-          selecionarTipoConsulta('primeira'); // Volta para o modo "Primeira Consulta" após salvar
-
-          // Se a aba de histórico estiver visível e o paciente for o mesmo, atualiza o histórico
-          if (document.getElementById('historico').style.display !== 'none' &amp;&amp; historicoSelect.value === nomeSel) {
+          historicoPreview.style.display = 'none';
+          selecionarTipoConsulta('primeira');
+          
+          if (document.getElementById('historico').style.display !== 'none' && historicoSelect.value === nomeSel) {
             await verHistorico();
           }
         } else {
@@ -1029,16 +1033,17 @@
         console.error(err);
         alert('Erro ao registrar sessão: ' + err.message);
       }
-    }
+    });
 
-    // PDF export
+    /* ---------------------------
+       PDF export (jsPDF)
+       --------------------------- */
     async function exportarPDF() {
       const { jsPDF } = window.jspdf;
       const nome = historicoSelect.value || 'Paciente';
       if (!historicoSelect.value) { alert('Selecione um paciente para exportar.'); return; }
-
       if (painel.innerHTML.trim() === '' || painel.innerHTML.includes('Selecione um paciente') || painel.innerHTML.includes('Nenhum histórico')) {
-        await verHistorico(); // Garante que o histórico esteja carregado antes de exportar
+        await verHistorico();
       }
 
       const doc = new jsPDF({ unit:'pt', format:'a4' });
@@ -1070,7 +1075,9 @@
       doc.save(`Historico_${nome.replace(/\s+/g,'_')}.pdf`);
     }
 
-    // Funções de autenticação Firebase
+    /* ---------------------------
+       Auth (Firebase)
+       --------------------------- */
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).catch(err => alert('Erro ao logar: ' + err.message));
@@ -1082,7 +1089,30 @@
       }).catch(err => alert('Erro ao sair: ' + err.message));
     }
 
-    // Exportar funções para o escopo global (se necessário para onclick no HTML)
+    auth.onAuthStateChanged(user => {
+      carregando.style.display = 'none';
+      if (user) {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        document.getElementById('topbar').style.display = 'flex';
+        document.getElementById('userEmail').textContent = user.email || '';
+        const avatar = document.getElementById('userAvatar');
+        document.getElementById('userName').textContent = user.displayName || '';
+        if (user.photoURL) avatar.style.backgroundImage = `url(${user.photoURL})`;
+        else avatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
+
+        atualizarListaDeNomes();
+        preencherAnos();
+        setActiveNav(btnPaciente);
+        showTab('paciente');
+      } else {
+        document.getElementById('loginCard').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+        document.getElementById('topbar').style.display = 'none';
+        document.getElementById('userEmail').textContent = ' — ';
+      }
+    });
+
     window.loginGoogle = loginGoogle;
     window.logoutGoogle = logoutGoogle;
     window.verHistorico = verHistorico;
@@ -1090,7 +1120,15 @@
     window.toggleSidebar = toggleSidebar;
     window.selecionarTipoConsulta = selecionarTipoConsulta;
     window.atualizarFrequencia = atualizarFrequencia;
-    window.carregarHistoricoAnterior = carregarHistoricoAnterior; // Exportar para uso no onchange do select
+
+    document.getElementById('btn-paciente').addEventListener('click', () => { setActiveNav(btnPaciente); showTab('paciente'); });
+    document.getElementById('btn-sessao').addEventListener('click', () => { setActiveNav(btnSessao); showTab('sessao'); });
+    document.getElementById('btn-historico').addEventListener('click', () => { setActiveNav(btnHistorico); showTab('historico'); });
+    document.getElementById('btn-frequencia').addEventListener('click', () => { setActiveNav(btnFrequencia); showTab('frequencia'); });
+
+    historicoSelect.addEventListener('change', () => {
+      if (document.getElementById('historico').style.display !== 'none') verHistorico();
+    });
   </script>
 </body>
 </html>
