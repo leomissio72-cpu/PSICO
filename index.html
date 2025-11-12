@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Prontuário Psicológico — Dashboard</title>
-  <!-- Fonts &amp; Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&amp;display=swap" rel="stylesheet">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -164,12 +164,12 @@
       border: 1px solid transparent;
     }
     .actions { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap: wrap; }
-    .session-card { 
-      background: #f8f9fa; 
-      padding:12px; 
-      border-radius:8px; 
-      border-left:4px solid #6d28d9; 
-      margin-bottom:12px; 
+    .session-card {
+      background: #f8f9fa;
+      padding:12px;
+      border-radius:8px;
+      border-left:4px solid #6d28d9;
+      margin-bottom:12px;
       color:var(--text-dark);
       font-size: 13px;
       line-height: 1.6;
@@ -745,7 +745,7 @@
     async function carregarHistoricoParaAcompanhamento(nome) {
       if (!nome || tipoConsultaAtual !== 'acompanhamento') return;
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(nome)}`);
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const sessoes = data.historico || [];
@@ -821,7 +821,7 @@
       if (!nome) { painel.innerHTML = '<p style="color:var(--muted)">Selecione um paciente.</p>'; return; }
       painel.innerHTML = '<p style="color:var(--muted)">Buscando evolução...</p>';
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(nome)}`);
+        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const sessoes = data.historico || [];
@@ -853,7 +853,7 @@
           const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
           const allData = await resAll.json();
           for (const p of allData) {
-            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(p.nome)}`);
+            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
             const pacData = await resPac.json();
             if (pacData.historico) {
               pacData.historico.forEach(s => {
@@ -863,7 +863,7 @@
             }
           }
         } else {
-          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(paciente)}`);
+          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente)}`);
           const data = await res.json();
           sessoes = data.historico || [];
           sessoes.forEach(s => s.nomePaciente = paciente);
@@ -872,8 +872,8 @@
           sessoes = sessoes.filter(s => {
             if (!s.dataConsulta) return false;
             const date = new Date(s.dataConsulta);
-            if (mes &amp;&amp; (date.getMonth() + 1) !== parseInt(mes)) return false;
-            if (ano &amp;&amp; date.getFullYear() !== parseInt(ano)) return false;
+            if (mes && (date.getMonth() + 1) !== parseInt(mes)) return false;
+            if (ano && date.getFullYear() !== parseInt(ano)) return false;
             return true;
           });
         }
@@ -1007,7 +1007,7 @@
           const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
           const allData = await resAll.json();
           for (const p of allData) {
-            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(p.nome)}`);
+            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
             const pacData = await resPac.json();
             if (pacData.historico) {
               pacData.historico.forEach(s => {
@@ -1017,22 +1017,22 @@
             }
           }
         } else {
-          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&amp;nome=${encodeURIComponent(paciente)}`);
+          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente)}`);
           const data = await res.json();
           sessoes = data.historico || [];
           sessoes.forEach(s => s.nomePaciente = paciente);
         }
         if (mes || ano || statusPag) {
           sessoes = sessoes.filter(s => {
-            if (mes &amp;&amp; s.dataConsulta) {
+            if (mes && s.dataConsulta) {
               const date = new Date(s.dataConsulta);
               if ((date.getMonth() + 1) !== parseInt(mes)) return false;
             }
-            if (ano &amp;&amp; s.dataConsulta) {
+            if (ano && s.dataConsulta) {
               const date = new Date(s.dataConsulta);
               if (date.getFullYear() !== parseInt(ano)) return false;
             }
-            if (statusPag &amp;&amp; s.statusPagamento !== statusPag) return false;
+            if (statusPag && s.statusPagamento !== statusPag) return false;
             return true;
           });
         }
@@ -1060,7 +1060,7 @@
               <td><span class="status-badge status-${statusPagClass}">${statusPag}</span></td>
               <td><span class="status-badge status-${statusConsClass}">${statusCons}</span></td>
               <td>
-                <button class="btn ghost" style="padding:6px 10px;font-size:12px" onclick="alterarStatusPagamento('${s.nomePaciente}', '${s.dataConsulta}')">
+                <button class="btn ghost" style="padding:6px 10px;font-size:12px" onclick="alterarStatusPagamento('${s.id || ''}', '${s.nomePaciente}', '${s.dataConsulta}')">
                   <span class="material-icons" style="font-size:16px">edit</span>
                 </button>
               </td>
@@ -1098,47 +1098,8 @@
         }
       });
     }
-    async function alterarStatusPagamento(nome, data) {
-      if (!nome || !data) {
-        alert('Dados insuficientes para alterar o status.');
-        return;
-      }
-
-      const novoStatus = prompt('Digite o novo status de pagamento:\n\n1 - Pago\n2 - Pendente\n\nDigite 1 ou 2:');
-
-      let statusFinal = '';
-      if (novoStatus === '1') {
-        statusFinal = 'Pago';
-      } else if (novoStatus === '2') {
-        statusFinal = 'Pendente';
-      } else {
-        alert('Opção inválida. Use 1 para Pago ou 2 para Pendente.');
-        return;
-      }
-
-      const confirma = confirm(`Alterar status de pagamento para "${statusFinal}"?\n\nPaciente: ${nome}\nData: ${data}`);
-      if (!confirma) return;
-
-      try {
-        const fd = new FormData();
-        fd.append('action', 'alterarStatusPagamento');
-        fd.append('nome', nome);
-        fd.append('dataConsulta', data);
-        fd.append('novoStatus', statusFinal);
-
-        const res = await fetch(scriptURL, { method: 'POST', body: fd });
-        const result = await res.json();
-
-        if (result.sucesso) {
-          alert('Status de pagamento alterado com sucesso!');
-          await atualizarFinanceiro();
-        } else {
-          throw new Error(result.erro || 'Erro ao alterar status');
-        }
-      } catch (err) {
-        console.error('Erro ao alterar status:', err);
-        alert('Erro ao alterar status de pagamento: ' + err.message);
-      }
+    function alterarStatusPagamento(id, nome, data) {
+      alert(`Funcionalidade de alteração de status em desenvolvimento.\nPaciente: ${nome}\nData: ${data}`);
     }
     function preencherAnos() {
       const anoAtual = new Date().getFullYear();
@@ -1155,3 +1116,140 @@
     formPaciente.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(formPaciente);
+      fd.append('action','cadastrarPaciente');
+      try {
+        const res = await fetch(scriptURL, { method:'POST', body: fd });
+        const data = await res.json();
+        if (data.sucesso) {
+          alert('Paciente cadastrado com sucesso!');
+          formPaciente.reset();
+          await atualizarListaDeNomes();
+        } else {
+          throw new Error(data.erro || 'Erro ao cadastrar');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao cadastrar paciente: ' + err.message);
+      }
+    });
+    formSessao.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(formSessao);
+      fd.append('action','registrarSessao');
+      const nomeSel = formSessao.elements.nome.value;
+      try {
+        const res = await fetch(scriptURL, { method:'POST', body: fd });
+        const data = await res.json();
+        if (data.sucesso) {
+          alert('Sessão registrada com sucesso!');
+          formSessao.reset();
+          historicoTextarea.value = '';
+          historicoPreview.style.display = 'none';
+          selecionarTipoConsulta('primeira');
+          if (document.getElementById('historico').style.display !== 'none' && historicoSelect.value === nomeSel) {
+            await verHistorico();
+          }
+        } else {
+          throw new Error(data.erro || 'Erro ao salvar sessão');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Erro ao registrar sessão: ' + err.message);
+      }
+    });
+    document.getElementById('formValorConsulta').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const valorAtual = parseFloat(document.getElementById('valorAtual').value);
+      const novoValor = parseFloat(document.getElementById('novoValor').value);
+      if (valorAtual) {
+        valorConsultaAtual = valorAtual;
+        alert(`Valor da consulta atualizado para R$ ${valorAtual.toFixed(2)}`);
+      }
+      if (novoValor) {
+        alert(`Novo valor de R$ ${novoValor.toFixed(2)} será aplicado nas próximas consultas.`);
+      }
+      atualizarFinanceiro();
+    });
+    async function exportarPDF() {
+      const { jsPDF } = window.jspdf;
+      const nome = historicoSelect.value || 'Paciente';
+      if (!historicoSelect.value) { alert('Selecione um paciente para exportar.'); return; }
+      if (painel.innerHTML.trim() === '' || painel.innerHTML.includes('Selecione um paciente')) {
+        await verHistorico();
+      }
+      const doc = new jsPDF({ unit:'pt', format:'a4' });
+      const margin = 40;
+      let y = 60;
+      doc.setFont('Helvetica','bold');
+      doc.setFontSize(16);
+      doc.text(`Evolução do Paciente — ${nome}`, margin, y);
+      y += 20;
+      doc.setFontSize(10);
+      doc.setFont('Helvetica','normal');
+      const cards = document.querySelectorAll('.session-card');
+      if (!cards.length) { alert('Nenhuma sessão disponível para exportar.'); return; }
+      cards.forEach((card) => {
+        const lines = card.innerText.split('\n').map(l => l.trim()).filter(Boolean);
+        doc.setFont('Helvetica','bold');
+        doc.setFontSize(12);
+        lines.forEach(line => {
+          const split = doc.splitTextToSize(line, 520);
+          if (y + (split.length * 12) > 800) { doc.addPage(); y = 60; }
+          doc.text(split, margin, y);
+          y += (split.length * 12) + 6;
+        });
+        y += 4;
+      });
+      doc.save(`Evolucao_${nome.replace(/\s+/g,'_')}.pdf`);
+    }
+    function loginGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(err => alert('Erro ao logar: ' + err.message));
+    }
+    function logoutGoogle() {
+      auth.signOut().then(() => {
+        alert('Você saiu do sistema.');
+      }).catch(err => alert('Erro ao sair: ' + err.message));
+    }
+    auth.onAuthStateChanged(user => {
+      carregando.style.display = 'none';
+      if (user) {
+        document.getElementById('loginCard').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        document.getElementById('topbar').style.display = 'flex';
+        document.getElementById('userEmail').textContent = user.email || '';
+        const avatar = document.getElementById('userAvatar');
+        document.getElementById('userName').textContent = user.displayName || '';
+        if (user.photoURL) avatar.style.backgroundImage = `url(${user.photoURL})`;
+        else avatar.textContent = (user.displayName || 'U').charAt(0).toUpperCase();
+        atualizarListaDeNomes();
+        preencherAnos();
+        setActiveNav(btnPaciente);
+        showTab('paciente');
+      } else {
+        document.getElementById('loginCard').style.display = 'block';
+        document.getElementById('appContent').style.display = 'none';
+        document.getElementById('topbar').style.display = 'none';
+        document.getElementById('userEmail').textContent = ' — ';
+      }
+    });
+    window.loginGoogle = loginGoogle;
+    window.logoutGoogle = logoutGoogle;
+    window.verHistorico = verHistorico;
+    window.exportarPDF = exportarPDF;
+    window.toggleSidebar = toggleSidebar;
+    window.selecionarTipoConsulta = selecionarTipoConsulta;
+    window.atualizarFrequencia = atualizarFrequencia;
+    window.atualizarFinanceiro = atualizarFinanceiro;
+    window.alterarStatusPagamento = alterarStatusPagamento;
+    document.getElementById('btn-paciente').addEventListener('click', () => { setActiveNav(btnPaciente); showTab('paciente'); });
+    document.getElementById('btn-sessao').addEventListener('click', () => { setActiveNav(btnSessao); showTab('sessao'); });
+    document.getElementById('btn-historico').addEventListener('click', () => { setActiveNav(btnHistorico); showTab('historico'); });
+    document.getElementById('btn-frequencia').addEventListener('click', () => { setActiveNav(btnFrequencia); showTab('frequencia'); });
+    document.getElementById('btn-financeiro').addEventListener('click', () => { setActiveNav(btnFinanceiro); showTab('financeiro'); });
+    historicoSelect.addEventListener('change', () => {
+      if (document.getElementById('historico').style.display !== 'none') verHistorico();
+    });
+  </script>
+</body>
+</html>
