@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
@@ -15,7 +15,7 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-  <!-- Firebase (compat for your current usage) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
@@ -33,6 +33,7 @@
       --success:#10b981;
       --warning:#f59e0b;
       --danger:#ef4444;
+      --info:#3b82f6;
     }
 
     *{box-sizing:border-box}
@@ -120,7 +121,7 @@
       box-shadow:0 6px 18px rgba(79,70,229,0.15)
     }
 
-    /* Workspace / main content */
+    /* Workspace */
     .workspace {
       flex:1;
       display:flex;
@@ -216,10 +217,6 @@
       border-left: 3px solid #6d28d9;
     }
 
-    .historico-preview .historico-item:last-child {
-      margin-bottom: 0;
-    }
-
     .historico-preview .date {
       font-weight: 600;
       color: #6d28d9;
@@ -243,6 +240,8 @@
     .status-compareceu { background: #d1fae5; color: #065f46; }
     .status-faltou { background: #fee2e2; color: #991b1b; }
     .status-reagendou { background: #fef3c7; color: #92400e; }
+    .status-pago { background: #d1fae5; color: #065f46; }
+    .status-pendente { background: #fee2e2; color: #991b1b; }
 
     /* Table */
     table {
@@ -296,6 +295,7 @@
     .stat-card.success .value { color: var(--success); }
     .stat-card.danger .value { color: var(--danger); }
     .stat-card.warning .value { color: var(--warning); }
+    .stat-card.info .value { color: var(--info); }
 
     /* Chart container */
     .chart-container {
@@ -344,12 +344,17 @@
 
         <button class="nav-btn" data-tab="historico" id="btn-historico">
           <span class="material-icons">history</span>
-          <span class="label">Histórico</span>
+          <span class="label">Evolução</span>
         </button>
 
         <button class="nav-btn" data-tab="frequencia" id="btn-frequencia">
           <span class="material-icons">analytics</span>
           <span class="label">Frequência</span>
+        </button>
+
+        <button class="nav-btn" data-tab="financeiro" id="btn-financeiro">
+          <span class="material-icons">payments</span>
+          <span class="label">Financeiro</span>
         </button>
       </nav>
 
@@ -383,7 +388,7 @@
       <div class="main-area" id="mainArea">
         <div id="carregando" style="text-align:center;padding:30px;color:var(--muted)">Carregando...</div>
 
-        <!-- LOGIN CARD (quando deslogado) -->
+        <!-- LOGIN CARD -->
         <div id="loginCard" style="display:none">
           <div class="card">
             <h2>Bem-vindo</h2>
@@ -413,6 +418,9 @@
                   <label>Contato</label>
                   <input type="text" name="contato" />
 
+                  <label>Valor da Consulta (R$)</label>
+                  <input type="number" name="valorConsulta" step="0.01" placeholder="150.00" />
+
                   <div style="margin-top:14px">
                     <button class="btn primary" type="submit"><span class="material-icons">person_add</span> Cadastrar</button>
                   </div>
@@ -422,7 +430,7 @@
               <div>
                 <div class="card" style="padding:14px;background:#f8f9fa">
                   <strong style="color:var(--muted)">Dica rápida</strong>
-                  <p style="margin-top:8px;color:var(--muted)">Use nomes completos para evitar duplicidade. Os pacientes cadastrados ficam disponíveis na aba Sessão e Histórico.</p>
+                  <p style="margin-top:8px;color:var(--muted)">Use nomes completos para evitar duplicidade. O valor da consulta pode ser ajustado posteriormente na aba Financeiro.</p>
                 </div>
               </div>
             </div>
@@ -432,7 +440,6 @@
           <section id="sessao" class="card tab" style="display:none">
             <h3>Registrar Sessão</h3>
             
-            <!-- Botões de Tipo de Consulta -->
             <div style="margin-top:14px; margin-bottom:20px;">
               <label style="margin-bottom:10px; display:block;">Tipo de Consulta</label>
               <div class="actions" style="margin:0;">
@@ -465,10 +472,15 @@
                   <option value="Reagendou">📅 Reagendou</option>
                 </select>
 
+                <label>Status do Pagamento</label>
+                <select name="statusPagamento" id="statusPagamento" required>
+                  <option value="Pago">💰 Pago</option>
+                  <option value="Pendente">⏳ Pendente</option>
+                </select>
+
                 <label>Histórico Psicológico</label>
                 <textarea name="historico" id="historicoTextarea"></textarea>
                 
-                <!-- Preview do histórico em modo acompanhamento -->
                 <div id="historicoPreview" style="display:none;">
                   <label style="margin-top:12px;">Histórico Anterior do Paciente</label>
                   <div class="historico-preview" id="historicoPreviewContent"></div>
@@ -484,17 +496,17 @@
             </div>
           </section>
 
-          <!-- Histórico Tab -->
+          <!-- Histórico/Evolução Tab -->
           <section id="historico" class="card tab" style="display:none">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <h3>Histórico do Paciente</h3>
-              <div style="color:var(--muted);font-size:13px">Exporte o histórico visível em PDF</div>
+              <h3>Evolução do Paciente</h3>
+              <div style="color:var(--muted);font-size:13px">Exporte a evolução em PDF</div>
             </div>
 
             <div class="actions" style="margin-top:12px">
               <select id="historicoSelect" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)"></select>
 
-              <button class="btn primary" onclick="verHistorico()"><span class="material-icons">search</span> Buscar Histórico</button>
+              <button class="btn primary" onclick="verHistorico()"><span class="material-icons">search</span> Buscar Evolução</button>
 
               <button class="btn primary" onclick="exportarPDF()"><span class="material-icons">picture_as_pdf</span> Exportar PDF</button>
             </div>
@@ -506,7 +518,6 @@
           <section id="frequencia" class="card tab" style="display:none">
             <h3>Frequência de Consultas</h3>
             
-            <!-- Filtros -->
             <div class="actions" style="margin-top:16px">
               <select id="frequenciaPaciente" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
                 <option value="">Todos os pacientes</option>
@@ -537,7 +548,6 @@
               </button>
             </div>
 
-            <!-- Stats Cards -->
             <div class="stats-grid" style="margin-top:20px">
               <div class="stat-card">
                 <div class="label">Total de Consultas</div>
@@ -557,7 +567,6 @@
               </div>
             </div>
 
-            <!-- Gráfico -->
             <div class="card" style="margin-top:20px;padding:20px">
               <h4 style="margin-bottom:16px">Frequência Mensal</h4>
               <div class="chart-container">
@@ -565,7 +574,28 @@
               </div>
             </div>
 
-            <!-- Tabela -->
+            <div style="margin-top:20px">
+              <h4 style="margin-bottom:12px">Resumo por Paciente</h4>
+              <div style="overflow-x:auto">
+                <table id="frequenciaResumoTable">
+                  <thead>
+                    <tr>
+                      <th>Paciente</th>
+                      <th>Total</th>
+                      <th>Compareceu</th>
+                      <th>Faltou</th>
+                      <th>Reagendou</th>
+                    </tr>
+                  </thead>
+                  <tbody id="frequenciaResumoBody">
+                    <tr>
+                      <td colspan="5" style="text-align:center;color:var(--muted)">Nenhum dado encontrado</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div style="margin-top:20px">
               <h4 style="margin-bottom:12px">Detalhamento de Consultas</h4>
               <div style="overflow-x:auto">
@@ -587,21 +617,135 @@
               </div>
             </div>
           </section>
+
+          <!-- Financeiro Tab -->
+          <section id="financeiro" class="card tab" style="display:none">
+            <h3>Gestão Financeira</h3>
+            
+            <!-- Configuração de Valores -->
+            <div class="card" style="margin-top:16px;background:#f8f9fa;padding:16px">
+              <h4 style="margin-bottom:12px">Configuração de Valores</h4>
+              <form id="formValorConsulta">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+                  <div>
+                    <label>Valor Atual da Consulta (R$)</label>
+                    <input type="number" id="valorAtual" step="0.01" placeholder="150.00" required />
+                  </div>
+                  <div>
+                    <label>Novo Valor (Reajuste)</label>
+                    <input type="number" id="novoValor" step="0.01" placeholder="180.00" />
+                  </div>
+                  <div style="display:flex;align-items:end">
+                    <button class="btn primary" type="submit" style="width:100%">
+                      <span class="material-icons">save</span> Salvar Valores
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <!-- Filtros -->
+            <div class="actions" style="margin-top:20px">
+              <select id="financeiroPaciente" style="min-width:220px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os pacientes</option>
+              </select>
+
+              <select id="financeiroMes" style="min-width:150px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os meses</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+
+              <select id="financeiroAno" style="min-width:120px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os anos</option>
+              </select>
+
+              <select id="financeiroStatus" style="min-width:150px;padding:10px;border-radius:8px;background:#fff;border:1px solid var(--border);color:var(--text-dark)">
+                <option value="">Todos os status</option>
+                <option value="Pago">Pago</option>
+                <option value="Pendente">Pendente</option>
+              </select>
+
+              <button class="btn primary" onclick="atualizarFinanceiro()">
+                <span class="material-icons">filter_alt</span> Filtrar
+              </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid" style="margin-top:20px">
+              <div class="stat-card success">
+                <div class="label">Total Recebido</div>
+                <div class="value" id="statRecebido">R$ 0,00</div>
+              </div>
+              <div class="stat-card danger">
+                <div class="label">Total Pendente</div>
+                <div class="value" id="statPendente">R$ 0,00</div>
+              </div>
+              <div class="stat-card info">
+                <div class="label">Receita Total</div>
+                <div class="value" id="statReceitaTotal">R$ 0,00</div>
+              </div>
+              <div class="stat-card">
+                <div class="label">Consultas Pagas</div>
+                <div class="value" id="statConsultasPagas">0</div>
+              </div>
+            </div>
+
+            <!-- Gráfico -->
+            <div class="card" style="margin-top:20px;padding:20px">
+              <h4 style="margin-bottom:16px">Status de Pagamentos</h4>
+              <div class="chart-container">
+                <canvas id="financeiroChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Tabela -->
+            <div style="margin-top:20px">
+              <h4 style="margin-bottom:12px">Detalhamento Financeiro</h4>
+              <div style="overflow-x:auto">
+                <table id="financeiroTable">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Paciente</th>
+                      <th>Valor</th>
+                      <th>Status Pagamento</th>
+                      <th>Status Consulta</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="financeiroTableBody">
+                    <tr>
+                      <td colspan="6" style="text-align:center;color:var(--muted)">Nenhum registro encontrado</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    /* ---------------------------
-       Configurações & variáveis
-       --------------------------- */
     const scriptURL = "https://script.google.com/macros/s/AKfycbwHP641yvS4sxgrJwt6yN3vopBvD5UqmrZzyFdF59TZez54XB6HVmTSSDJJrZFqgank/exec";
 
     const btnPaciente = document.getElementById('btn-paciente');
     const btnSessao = document.getElementById('btn-sessao');
     const btnHistorico = document.getElementById('btn-historico');
     const btnFrequencia = document.getElementById('btn-frequencia');
+    const btnFinanceiro = document.getElementById('btn-financeiro');
     const tabs = document.querySelectorAll('.tab');
 
     const formPaciente = document.getElementById('formPaciente');
@@ -621,8 +765,9 @@
 
     let tipoConsultaAtual = 'primeira';
     let frequenciaChart = null;
+    let financeiroChart = null;
+    let valorConsultaAtual = 150.00;
 
-    /* Firebase config */
     const firebaseConfig = {
       apiKey: "AIzaSyCznEr8M2lNu7nwCfGN_kcJZFM5lqRQdf8",
       authDomain: "psico-17375.firebaseapp.com",
@@ -635,9 +780,6 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    /* ---------------------------
-       UI helpers
-       --------------------------- */
     function setActiveNav(button) {
       document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
       button.classList.add('active');
@@ -647,12 +789,18 @@
       tabs.forEach(t => { t.style.display = 'none'; t.classList.remove('active'); });
       const el = document.getElementById(tabId);
       if (el) { el.style.display = 'block'; el.classList.add('active'); }
-      pageTitle.textContent = tabId.charAt(0).toUpperCase() + tabId.slice(1);
       
-      // Carregar dados específicos da aba
-      if (tabId === 'frequencia') {
-        atualizarFrequencia();
-      }
+      const titulos = {
+        'paciente': 'Paciente',
+        'sessao': 'Sessão',
+        'historico': 'Evolução',
+        'frequencia': 'Frequência',
+        'financeiro': 'Financeiro'
+      };
+      pageTitle.textContent = titulos[tabId] || tabId;
+      
+      if (tabId === 'frequencia') atualizarFrequencia();
+      if (tabId === 'financeiro') atualizarFinanceiro();
     }
 
     document.querySelectorAll('.nav button').forEach(btn => {
@@ -671,9 +819,6 @@
       });
     }
 
-    /* ---------------------------
-       Tipo de Consulta
-       --------------------------- */
     async function selecionarTipoConsulta(tipo) {
       tipoConsultaAtual = tipo;
       tipoConsultaInput.value = tipo;
@@ -689,9 +834,9 @@
         historicoPreview.style.display = 'none';
         historicoTextarea.value = '';
       } else {
-        infoText.textContent = 'Em acompanhamento: histórico anterior será carregado automaticamente';
+        infoText.textContent = 'Em acompanhamento: evolução anterior será carregada automaticamente';
         historicoTextarea.readOnly = true;
-        historicoTextarea.placeholder = 'O histórico será preenchido automaticamente ao selecionar o paciente';
+        historicoTextarea.placeholder = 'A evolução será preenchida automaticamente ao selecionar o paciente';
         
         const nomeSelecionado = nomeSessao.value;
         if (nomeSelecionado) {
@@ -710,16 +855,16 @@
         const sessoes = data.historico || [];
         
         if (sessoes.length === 0) {
-          historicoTextarea.value = 'Nenhum histórico anterior encontrado para este paciente.';
+          historicoTextarea.value = 'Nenhuma evolução anterior encontrada para este paciente.';
           historicoPreview.style.display = 'none';
           return;
         }
         
-        let historicoCompleto = '=== HISTÓRICO ANTERIOR DO PACIENTE ===\n\n';
+        let historicoCompleto = '=== EVOLUÇÃO ANTERIOR DO PACIENTE ===\n\n';
         sessoes.forEach((sessao, index) => {
           const dataConsulta = sessao.dataConsulta || 'Data não informada';
           historicoCompleto += `📅 ${dataConsulta}\n`;
-          historicoCompleto += `${sessao.historico || '(sem registro)'}\n`;
+          historicoCompleto += `${sessao.evolucao || '(sem registro)'}\n`;
           if (index < sessoes.length - 1) {
             historicoCompleto += '\n---\n\n';
           }
@@ -734,15 +879,15 @@
           previewHTML += `
             <div class="historico-item">
               <div class="date">📅 ${dataConsulta}</div>
-              <div class="content">${sessao.historico || '(sem registro)'}</div>
+              <div class="content">${sessao.evolucao || '(sem registro)'}</div>
             </div>
           `;
         });
         historicoPreviewContent.innerHTML = previewHTML;
         
       } catch (err) {
-        console.error('Erro ao carregar histórico:', err);
-        historicoTextarea.value = 'Erro ao carregar histórico anterior.';
+        console.error('Erro ao carregar evolução:', err);
+        historicoTextarea.value = 'Erro ao carregar evolução anterior.';
         historicoPreview.style.display = 'none';
       }
     }
@@ -753,9 +898,6 @@
       }
     });
 
-    /* ---------------------------
-       Data / fetch functions
-       --------------------------- */
     async function atualizarListaDeNomes() {
       carregando.innerText = 'Carregando pacientes...';
       carregando.style.display = 'block';
@@ -768,18 +910,21 @@
         nomeSessao.innerHTML = '<option value="">Selecione</option>';
         historicoSelect.innerHTML = '<option value="">Selecione</option>';
         document.getElementById('frequenciaPaciente').innerHTML = '<option value="">Todos os pacientes</option>';
+        document.getElementById('financeiroPaciente').innerHTML = '<option value="">Todos os pacientes</option>';
         
         nomes.forEach(n => {
           const opt1 = document.createElement('option'); opt1.value = n; opt1.textContent = n;
           const opt2 = document.createElement('option'); opt2.value = n; opt2.textContent = n;
           const opt3 = document.createElement('option'); opt3.value = n; opt3.textContent = n;
+          const opt4 = document.createElement('option'); opt4.value = n; opt4.textContent = n;
           nomeSessao.appendChild(opt1);
           historicoSelect.appendChild(opt2);
           document.getElementById('frequenciaPaciente').appendChild(opt3);
+          document.getElementById('financeiroPaciente').appendChild(opt4);
         });
       } catch (err) {
         console.error(err);
-        alert('Erro ao carregar pacientes. Verifique a URL do Apps Script e permissões.');
+        alert('Erro ao carregar pacientes.');
       } finally {
         carregando.style.display = 'none';
       }
@@ -788,13 +933,13 @@
     async function verHistorico() {
       const nome = historicoSelect.value;
       if (!nome) { painel.innerHTML = '<p style="color:var(--muted)">Selecione um paciente.</p>'; return; }
-      painel.innerHTML = '<p style="color:var(--muted)">Buscando histórico...</p>';
+      painel.innerHTML = '<p style="color:var(--muted)">Buscando evolução...</p>';
       try {
         const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(nome)}`);
         if (!res.ok) throw new Error('Erro de rede');
         const data = await res.json();
         const sessoes = data.historico || [];
-        if (!sessoes.length) { painel.innerHTML = `<p style="color:var(--muted)">Nenhum histórico encontrado para ${nome}.</p>`; return; }
+        if (!sessoes.length) { painel.innerHTML = `<p style="color:var(--muted)">Nenhuma evolução encontrada para ${nome}.</p>`; return; }
         painel.innerHTML = sessoes.map(sessao => {
           const dataConsulta = sessao.dataConsulta || '(sem data)';
           const status = sessao.statusConsulta || 'Não informado';
@@ -804,35 +949,25 @@
               <div style="font-weight:700;color:var(--text-dark)">📅 ${dataConsulta}</div>
               <span class="status-badge status-${statusClass}">${status}</span>
             </div>
-            <div style="margin-top:6px;color:var(--muted)"><strong>Histórico:</strong> ${sessao.historico || '(vazio)'}</div>
             <div style="margin-top:6px;color:var(--muted)"><strong>Evolução:</strong> ${sessao.evolucao || '(vazio)'}</div>
           </div>`;
         }).join('');
       } catch (err) {
         console.error(err);
-        painel.innerHTML = `<p style="color:var(--muted)">Erro ao buscar histórico.</p>`;
+        painel.innerHTML = `<p style="color:var(--muted)">Erro ao buscar evolução.</p>`;
       }
     }
 
-    /* ---------------------------
-       Frequência
-       --------------------------- */
     async function atualizarFrequencia() {
       const paciente = document.getElementById('frequenciaPaciente').value;
       const mes = document.getElementById('frequenciaMes').value;
       const ano = document.getElementById('frequenciaAno').value;
       
       try {
-        const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente || '')}`);
-        if (!res.ok) throw new Error('Erro de rede');
-        const data = await res.json();
-        let sessoes = data.historico || [];
-        
-        // Se não tem paciente específico, buscar todas as sessões
+        let sessoes = [];
         if (!paciente) {
           const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
           const allData = await resAll.json();
-          sessoes = [];
           for (const p of allData) {
             const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
             const pacData = await resPac.json();
@@ -844,10 +979,12 @@
             }
           }
         } else {
+          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente)}`);
+          const data = await res.json();
+          sessoes = data.historico || [];
           sessoes.forEach(s => s.nomePaciente = paciente);
         }
         
-        // Filtrar por mês e ano
         if (mes || ano) {
           sessoes = sessoes.filter(s => {
             if (!s.dataConsulta) return false;
@@ -858,7 +995,6 @@
           });
         }
         
-        // Atualizar stats
         const total = sessoes.length;
         const compareceu = sessoes.filter(s => s.statusConsulta === 'Compareceu').length;
         const faltou = sessoes.filter(s => s.statusConsulta === 'Faltou').length;
@@ -869,7 +1005,34 @@
         document.getElementById('statFaltou').textContent = faltou;
         document.getElementById('statReagendou').textContent = reagendou;
         
-        // Atualizar tabela
+        // Resumo por paciente
+        const resumoPacientes = {};
+        sessoes.forEach(s => {
+          const nome = s.nomePaciente || 'Sem nome';
+          if (!resumoPacientes[nome]) {
+            resumoPacientes[nome] = { total: 0, compareceu: 0, faltou: 0, reagendou: 0 };
+          }
+          resumoPacientes[nome].total++;
+          if (s.statusConsulta === 'Compareceu') resumoPacientes[nome].compareceu++;
+          else if (s.statusConsulta === 'Faltou') resumoPacientes[nome].faltou++;
+          else if (s.statusConsulta === 'Reagendou') resumoPacientes[nome].reagendou++;
+        });
+        
+        const resumoBody = document.getElementById('frequenciaResumoBody');
+        if (Object.keys(resumoPacientes).length === 0) {
+          resumoBody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted)">Nenhum dado encontrado</td></tr>';
+        } else {
+          resumoBody.innerHTML = Object.entries(resumoPacientes).map(([nome, stats]) => `
+            <tr>
+              <td><strong>${nome}</strong></td>
+              <td>${stats.total}</td>
+              <td><span class="status-badge status-compareceu">${stats.compareceu}</span></td>
+              <td><span class="status-badge status-faltou">${stats.faltou}</span></td>
+              <td><span class="status-badge status-reagendou">${stats.reagendou}</span></td>
+            </tr>
+          `).join('');
+        }
+        
         const tbody = document.getElementById('frequenciaTableBody');
         if (sessoes.length === 0) {
           tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Nenhuma consulta encontrada</td></tr>';
@@ -887,8 +1050,7 @@
           }).join('');
         }
         
-        // Atualizar gráfico
-        atualizarGrafico(sessoes);
+        atualizarGraficoFrequencia(sessoes);
         
       } catch (err) {
         console.error('Erro ao atualizar frequência:', err);
@@ -896,8 +1058,7 @@
       }
     }
 
-    function atualizarGrafico(sessoes) {
-      // Agrupar por mês
+    function atualizarGraficoFrequencia(sessoes) {
       const mesesData = {};
       sessoes.forEach(s => {
         if (!s.dataConsulta) return;
@@ -918,9 +1079,7 @@
       const reagendouData = labels.map(l => mesesData[l].reagendou);
       
       const ctx = document.getElementById('frequenciaChart');
-      if (frequenciaChart) {
-        frequenciaChart.destroy();
-      }
+      if (frequenciaChart) frequenciaChart.destroy();
       
       frequenciaChart = new Chart(ctx, {
         type: 'bar',
@@ -954,40 +1113,148 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'top',
-            },
-            title: {
-              display: false
-            }
+            legend: { position: 'top' }
           },
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                stepSize: 1
-              }
+              ticks: { stepSize: 1 }
             }
           }
         }
       });
     }
 
-    // Preencher anos no select
-    function preencherAnos() {
-      const anoSelect = document.getElementById('frequenciaAno');
-      const anoAtual = new Date().getFullYear();
-      for (let i = anoAtual; i >= anoAtual - 5; i--) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = i;
-        anoSelect.appendChild(opt);
+    async function atualizarFinanceiro() {
+      const paciente = document.getElementById('financeiroPaciente').value;
+      const mes = document.getElementById('financeiroMes').value;
+      const ano = document.getElementById('financeiroAno').value;
+      const statusPag = document.getElementById('financeiroStatus').value;
+      
+      try {
+        let sessoes = [];
+        if (!paciente) {
+          const resAll = await fetch(`${scriptURL}?action=listarPacientes`);
+          const allData = await resAll.json();
+          for (const p of allData) {
+            const resPac = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(p.nome)}`);
+            const pacData = await resPac.json();
+            if (pacData.historico) {
+              pacData.historico.forEach(s => {
+                s.nomePaciente = p.nome;
+                sessoes.push(s);
+              });
+            }
+          }
+        } else {
+          const res = await fetch(`${scriptURL}?action=buscarHistoricoCompleto&nome=${encodeURIComponent(paciente)}`);
+          const data = await res.json();
+          sessoes = data.historico || [];
+          sessoes.forEach(s => s.nomePaciente = paciente);
+        }
+        
+        if (mes || ano || statusPag) {
+          sessoes = sessoes.filter(s => {
+            if (mes && s.dataConsulta) {
+              const date = new Date(s.dataConsulta);
+              if ((date.getMonth() + 1) !== parseInt(mes)) return false;
+            }
+            if (ano && s.dataConsulta) {
+              const date = new Date(s.dataConsulta);
+              if (date.getFullYear() !== parseInt(ano)) return false;
+            }
+            if (statusPag && s.statusPagamento !== statusPag) return false;
+            return true;
+          });
+        }
+        
+        const totalRecebido = sessoes.filter(s => s.statusPagamento === 'Pago').length * valorConsultaAtual;
+        const totalPendente = sessoes.filter(s => s.statusPagamento === 'Pendente').length * valorConsultaAtual;
+        const receitaTotal = totalRecebido + totalPendente;
+        const consultasPagas = sessoes.filter(s => s.statusPagamento === 'Pago').length;
+        
+        document.getElementById('statRecebido').textContent = `R$ ${totalRecebido.toFixed(2).replace('.', ',')}`;
+        document.getElementById('statPendente').textContent = `R$ ${totalPendente.toFixed(2).replace('.', ',')}`;
+        document.getElementById('statReceitaTotal').textContent = `R$ ${receitaTotal.toFixed(2).replace('.', ',')}`;
+        document.getElementById('statConsultasPagas').textContent = consultasPagas;
+        
+        const tbody = document.getElementById('financeiroTableBody');
+        if (sessoes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Nenhum registro encontrado</td></tr>';
+        } else {
+          tbody.innerHTML = sessoes.map(s => {
+            const statusPag = s.statusPagamento || 'Pendente';
+            const statusPagClass = statusPag.toLowerCase();
+            const statusCons = s.statusConsulta || 'Não informado';
+            const statusConsClass = statusCons.toLowerCase().replace(/\s/g, '');
+            return `<tr>
+              <td>${s.dataConsulta || 'Sem data'}</td>
+              <td>${s.nomePaciente || 'Sem nome'}</td>
+              <td>R$ ${valorConsultaAtual.toFixed(2).replace('.', ',')}</td>
+              <td><span class="status-badge status-${statusPagClass}">${statusPag}</span></td>
+              <td><span class="status-badge status-${statusConsClass}">${statusCons}</span></td>
+              <td>
+                <button class="btn ghost" style="padding:6px 10px;font-size:12px" onclick="alterarStatusPagamento('${s.id || ''}', '${s.nomePaciente}', '${s.dataConsulta}')">
+                  <span class="material-icons" style="font-size:16px">edit</span>
+                </button>
+              </td>
+            </tr>`;
+          }).join('');
+        }
+        
+        atualizarGraficoFinanceiro(sessoes);
+        
+      } catch (err) {
+        console.error('Erro ao atualizar financeiro:', err);
+        alert('Erro ao carregar dados financeiros.');
       }
     }
 
-    /* ---------------------------
-       Forms
-       --------------------------- */
+    function atualizarGraficoFinanceiro(sessoes) {
+      const pago = sessoes.filter(s => s.statusPagamento === 'Pago').length;
+      const pendente = sessoes.filter(s => s.statusPagamento === 'Pendente').length;
+      
+      const ctx = document.getElementById('financeiroChart');
+      if (financeiroChart) financeiroChart.destroy();
+      
+      financeiroChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Pago', 'Pendente'],
+          datasets: [{
+            data: [pago, pendente],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderColor: ['#059669', '#dc2626'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' }
+          }
+        }
+      });
+    }
+
+    function alterarStatusPagamento(id, nome, data) {
+      alert(`Funcionalidade de alteração de status em desenvolvimento.\nPaciente: ${nome}\nData: ${data}`);
+    }
+
+    function preencherAnos() {
+      const anoAtual = new Date().getFullYear();
+      const selects = [document.getElementById('frequenciaAno'), document.getElementById('financeiroAno')];
+      selects.forEach(select => {
+        for (let i = anoAtual; i >= anoAtual - 5; i--) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = i;
+          select.appendChild(opt);
+        }
+      });
+    }
+
     formPaciente.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(formPaciente);
@@ -1035,14 +1302,28 @@
       }
     });
 
-    /* ---------------------------
-       PDF export (jsPDF)
-       --------------------------- */
+    document.getElementById('formValorConsulta').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const valorAtual = parseFloat(document.getElementById('valorAtual').value);
+      const novoValor = parseFloat(document.getElementById('novoValor').value);
+      
+      if (valorAtual) {
+        valorConsultaAtual = valorAtual;
+        alert(`Valor da consulta atualizado para R$ ${valorAtual.toFixed(2)}`);
+      }
+      
+      if (novoValor) {
+        alert(`Novo valor de R$ ${novoValor.toFixed(2)} será aplicado nas próximas consultas.`);
+      }
+      
+      atualizarFinanceiro();
+    });
+
     async function exportarPDF() {
       const { jsPDF } = window.jspdf;
       const nome = historicoSelect.value || 'Paciente';
       if (!historicoSelect.value) { alert('Selecione um paciente para exportar.'); return; }
-      if (painel.innerHTML.trim() === '' || painel.innerHTML.includes('Selecione um paciente') || painel.innerHTML.includes('Nenhum histórico')) {
+      if (painel.innerHTML.trim() === '' || painel.innerHTML.includes('Selecione um paciente')) {
         await verHistorico();
       }
 
@@ -1051,7 +1332,7 @@
       let y = 60;
       doc.setFont('Helvetica','bold');
       doc.setFontSize(16);
-      doc.text(`Histórico Psicológico — ${nome}`, margin, y);
+      doc.text(`Evolução do Paciente — ${nome}`, margin, y);
       y += 20;
       doc.setFontSize(10);
       doc.setFont('Helvetica','normal');
@@ -1059,7 +1340,7 @@
       const cards = document.querySelectorAll('.session-card');
       if (!cards.length) { alert('Nenhuma sessão disponível para exportar.'); return; }
 
-      cards.forEach((card, idx) => {
+      cards.forEach((card) => {
         const lines = card.innerText.split('\n').map(l => l.trim()).filter(Boolean);
         doc.setFont('Helvetica','bold');
         doc.setFontSize(12);
@@ -1072,12 +1353,9 @@
         y += 4;
       });
 
-      doc.save(`Historico_${nome.replace(/\s+/g,'_')}.pdf`);
+      doc.save(`Evolucao_${nome.replace(/\s+/g,'_')}.pdf`);
     }
 
-    /* ---------------------------
-       Auth (Firebase)
-       --------------------------- */
     function loginGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).catch(err => alert('Erro ao logar: ' + err.message));
@@ -1120,11 +1398,14 @@
     window.toggleSidebar = toggleSidebar;
     window.selecionarTipoConsulta = selecionarTipoConsulta;
     window.atualizarFrequencia = atualizarFrequencia;
+    window.atualizarFinanceiro = atualizarFinanceiro;
+    window.alterarStatusPagamento = alterarStatusPagamento;
 
     document.getElementById('btn-paciente').addEventListener('click', () => { setActiveNav(btnPaciente); showTab('paciente'); });
     document.getElementById('btn-sessao').addEventListener('click', () => { setActiveNav(btnSessao); showTab('sessao'); });
     document.getElementById('btn-historico').addEventListener('click', () => { setActiveNav(btnHistorico); showTab('historico'); });
     document.getElementById('btn-frequencia').addEventListener('click', () => { setActiveNav(btnFrequencia); showTab('frequencia'); });
+    document.getElementById('btn-financeiro').addEventListener('click', () => { setActiveNav(btnFinanceiro); showTab('financeiro'); });
 
     historicoSelect.addEventListener('change', () => {
       if (document.getElementById('historico').style.display !== 'none') verHistorico();
